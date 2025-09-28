@@ -13845,16 +13845,16 @@ class TransferLearningManager:
             if analysis_results.get('trend'):
                 # Dynamic default confidence based on symbol type
                 # Dynamic confidence based on symbol type and market conditions
-            if symbol in ['BTCUSD', 'ETHUSD']:
-                default_confidence = 0.38  # Higher for major crypto
-            elif symbol in ['XAUUSD']:
-                default_confidence = 0.36  # Moderate for gold
-            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                default_confidence = 0.32  # Lower for volatile indices
-            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                default_confidence = 0.35  # Standard for major forex
-            else:
-                default_confidence = 0.33  # Other symbols
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    default_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    default_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    default_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    default_confidence = 0.35  # Standard for major forex
+                else:
+                    default_confidence = 0.33  # Other symbols
                 trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else default_confidence
                 if trend_confidence > 0.7:
                     trend_adjustment = 1.2  # Increase TP in strong trends
@@ -14464,16 +14464,16 @@ class TransferLearningManager:
             for agent, opinion in opinions.items():
                 # Dynamic default confidence based on symbol type
                 # Dynamic confidence based on symbol type and market conditions
-            if symbol in ['BTCUSD', 'ETHUSD']:
-                default_confidence = 0.38  # Higher for major crypto
-            elif symbol in ['XAUUSD']:
-                default_confidence = 0.36  # Moderate for gold
-            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                default_confidence = 0.32  # Lower for volatile indices
-            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                default_confidence = 0.35  # Standard for major forex
-            else:
-                default_confidence = 0.33  # Other symbols
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    default_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    default_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    default_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    default_confidence = 0.35  # Standard for major forex
+                else:
+                    default_confidence = 0.33  # Other symbols
                 confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0
@@ -14922,16 +14922,16 @@ class MasterAgent:
             for agent, opinion in opinions.items():
                 # Dynamic default confidence based on symbol type
                 # Dynamic confidence based on symbol type and market conditions
-            if symbol in ['BTCUSD', 'ETHUSD']:
-                default_confidence = 0.38  # Higher for major crypto
-            elif symbol in ['XAUUSD']:
-                default_confidence = 0.36  # Moderate for gold
-            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                default_confidence = 0.32  # Lower for volatile indices
-            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                default_confidence = 0.35  # Standard for major forex
-            else:
-                default_confidence = 0.33  # Other symbols
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    default_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    default_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    default_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    default_confidence = 0.35  # Standard for major forex
+                else:
+                    default_confidence = 0.33  # Other symbols
                 confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0.0
