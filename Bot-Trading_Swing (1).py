@@ -1,4 +1,4 @@
-﻿# Standard library imports
+# Standard library imports
 print("🚀 [Bot] Starting imports...")
 
 # ==================================================
@@ -14336,8 +14336,9 @@ class TrendAnalysisAgent:
     def analyze(self, data, symbol):
         """analysis trenda symbol"""
         try:
-            if len(data) < 20:
-                return "HOLD", 0.5
+            if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
+                logging.warning(f"[TrendAnalysisAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
+                return "HOLD", 0.3  # Lower confidence for insufficient data
             
             # Calculate trend indicators
             sma_20 = data['close'].rolling(20).mean()
@@ -19732,6 +19733,19 @@ class EnhancedTradingBot:
                             if cached_data is not None and len(cached_data) >= 50:
                                 live_data_cache[symbol] = cached_data
                                 logger.info(f"[RL Strategy] Using cached data for {symbol}: {len(cached_data)} candles")
+                            else:
+                                # Force fresh data fetch if cache is also empty
+                                logger.warning(f"[RL Strategy] Both fresh and cached data empty for {symbol}, forcing data fetch...")
+                                try:
+                                    # Force data refresh
+                                    fresh_data = self.data_manager.create_enhanced_features(symbol, force_refresh=True)
+                                    if fresh_data is not None and len(fresh_data) >= 50:
+                                        live_data_cache[symbol] = fresh_data
+                                        logger.info(f"[RL Strategy] Force refresh successful for {symbol}: {len(fresh_data)} candles")
+                                    else:
+                                        logger.error(f"[RL Strategy] Force refresh failed for {symbol}")
+                                except Exception as e:
+                                    logger.error(f"[RL Strategy] Error in force refresh for {symbol}: {e}")
                                 print(f"   [RL Strategy] Using cached data for {symbol}: {len(cached_data)} candles")
                 except Exception as e:
                     print(f"   [RL Strategy] {symbol}: Li fetch data - {e}")
