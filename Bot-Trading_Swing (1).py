@@ -5770,16 +5770,16 @@ class OnlineLearningManager:
 
             # Check if market data is empty or invalid
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty):
-                logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with default confidence")
-                return "HOLD", 0.5
+                logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with low confidence")
+                return "HOLD", 0.3  # Lower confidence for empty data
             
             # Extract features - now returns numpy array
             features = self._extract_features_from_market_data(market_data)
             
             # Check if features are all zeros (indicating empty/invalid data)
             if isinstance(features, np.ndarray) and np.all(features == 0):
-                logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with default confidence")
-                return "HOLD", 0.5
+                logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with low confidence")
+                return "HOLD", 0.3  # Lower confidence for zero features
             
             # Ensure features is properly formatted - features is already numpy array
             if isinstance(features, np.ndarray):
@@ -13050,7 +13050,7 @@ class ProductionConfidenceManager:
         
         for source, action in signal_values.items():
             weight = weights.get(source, 0.25)
-            confidence = confidences.get(source, 0.5)
+            confidence = confidences.get(source, 0.3)  # Lower default confidence
             
             # Apply market condition adjustments
             adjusted_confidence = self._apply_market_adjustments(symbol, confidence, action)
@@ -13251,7 +13251,7 @@ class ProductionConfidenceManager:
         for source, data in signals.items():
             if isinstance(data, dict):
                 action = data.get('action', 'HOLD')
-                confidence = data.get('confidence', 0.5)
+                confidence = data.get('confidence', 0.3)  # Lower default confidence
             elif isinstance(data, tuple) and len(data) >= 2:
                 action, confidence = data[0], data[1]
             else:
@@ -13266,7 +13266,7 @@ class ProductionConfidenceManager:
         
         # Find best action
         best_action = max(action_votes.items(), key=lambda x: x[1])
-        final_confidence = best_action[1] / total_weight if total_weight > 0 else 0.5
+        final_confidence = best_action[1] / total_weight if total_weight > 0 else 0.3  # Lower default confidence
         # Enhanced logging for confidence
         conf_logger = get_trading_logger('ConfidenceManager')
         log_confidence(conf_logger, symbol, {
@@ -13671,7 +13671,7 @@ class TransferLearningManager:
             # Adjust based on trend strength
             trend_adjustment = 1.0
             if analysis_results.get('trend'):
-                trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else 0.5
+                trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else 0.3
                 if trend_confidence > 0.7:
                     trend_adjustment = 1.2  # Increase TP in strong trends
                 elif trend_confidence < 0.3:
@@ -14203,7 +14203,7 @@ class TransferLearningManager:
                     except Exception as e:
                         print(f"[Master Agent Coordinator] Li in {subtask_name}: {e}")
                         agent_opinions[subtask_name] = "HOLD"
-                        agent_confidences[subtask_name] = 0.5
+                        agent_confidences[subtask_name] = 0.3  # Lower confidence for failed analysis
             
             # Apply consensus mechanism
             final_decision, final_confidence = self._apply_consensus_mechanism(
@@ -14260,7 +14260,7 @@ class TransferLearningManager:
             total_weight = 0
             
             for agent, opinion in opinions.items():
-                confidence = confidences.get(agent, 0.5)
+                confidence = confidences.get(agent, 0.3)  # Lower default confidence
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0
                 weighted_votes[opinion] += confidence
@@ -14374,8 +14374,9 @@ class NewsAnalysisAgent:
     def analyze(self, data, symbol):
         """analysis trenda symbol"""
         try:
-            if len(data) < 20:
-                return "HOLD", 0.5
+            if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
+                logging.warning(f"[NewsAnalysisAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
+                return "HOLD", 0.3  # Lower confidence for insufficient data
             
             # Calculate trend indicators
             sma_20 = data['close'].rolling(20).mean()
@@ -14411,6 +14412,10 @@ class NewsAnalysisAgent:
     def analyze(self, data, symbol):
         """analysis news impact"""
         try:
+            if data is None or (hasattr(data, 'empty') and data.empty):
+                logging.warning(f"[NewsAnalysisAgent] No data for {symbol}")
+                return "HOLD", 0.3
+            
             # Simulate newfixnalysis (in real implementation, this would analyze actual news)
             news_impact = np.random.normal(0, 0.3)  # Random news impact
             
@@ -14422,7 +14427,7 @@ class NewsAnalysisAgent:
                 confidence = min(0.8, abs(news_impact))
             else:
                 decision = "HOLD"
-                confidence = 0.5
+                confidence = 0.4  # Lower confidence for neutral news
             
             return decision, confidence
             
@@ -14436,8 +14441,9 @@ class RiskManagementAgent:
     def analyze(self, data, symbol):
         """analysis risk v dua ra khuy n ngh """
         try:
-            if len(data) < 10:
-                return "HOLD", 0.5
+            if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 10:
+                logging.warning(f"[RiskManagementAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
+                return "HOLD", 0.3  # Lower confidence for insufficient data
             
             # Calculate volatility
             returns = data['close'].pct_change().dropna()
@@ -14466,6 +14472,10 @@ class SentimentAnalysisAgent:
     def analyze(self, data, symbol):
         """analysis sentiment"""
         try:
+            if data is None or (hasattr(data, 'empty') and data.empty):
+                logging.warning(f"[SentimentAnalysisAgent] No data for {symbol}")
+                return "HOLD", 0.3
+            
             # Simulate sentiment analysis
             sentiment_score = np.random.uniform(-1, 1)
             
@@ -14477,7 +14487,7 @@ class SentimentAnalysisAgent:
                 confidence = min(0.8, abs(sentiment_score))
             else:
                 decision = "HOLD"
-                confidence = 0.5
+                confidence = 0.4  # Lower confidence for neutral sentiment
             
             return decision, confidence
             
@@ -14491,8 +14501,9 @@ class VolatilityPredictionAgent:
     def analyze(self, data, symbol):
         """Equal volatility v dua ra khuy n ngh """
         try:
-            if len(data) < 20:
-                return "HOLD", 0.5
+            if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
+                logging.warning(f"[VolatilityPredictionAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
+                return "HOLD", 0.3  # Lower confidence for insufficient data
             
             # Calculate current volatility
             returns = data['close'].pct_change().dropna()
@@ -14520,6 +14531,10 @@ class PortfolioOptimizationAgent:
     def analyze(self, data, symbol):
         """T i uu ha portfolio"""
         try:
+            if data is None or (hasattr(data, 'empty') and data.empty):
+                logging.warning(f"[PortfolioOptimizationAgent] No data for {symbol}")
+                return "HOLD", 0.3
+            
             # Simulate portfolio optimization
             portfolio_score = np.random.uniform(0, 1)
             
@@ -14531,7 +14546,7 @@ class PortfolioOptimizationAgent:
                 confidence = 1 - portfolio_score
             else:
                 decision = "HOLD"
-                confidence = 0.5
+                confidence = 0.4  # Lower confidence for neutral portfolio score
             
             return decision, confidence
             
@@ -14670,7 +14685,7 @@ class MasterAgent:
             total_weight = 0.0
             
             for agent, opinion in opinions.items():
-                confidence = confidences.get(agent, 0.5)
+                confidence = confidences.get(agent, 0.3)  # Lower default confidence
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0.0
                 weighted_votes[opinion] += confidence
@@ -19799,20 +19814,20 @@ class EnhancedTradingBot:
                             prob_buy = prob_buy.item()
                     except Exception as e:
                         logging.error(f"Prediction failed for {symbol}: {e}")
-                        # Fallback: Using confidence old Or gi trmc dnh data nh
-                        prob_buy = 0.5
+                        # Fallback: Using lower confidence for failed predictions
+                        prob_buy = 0.3
                     
                     # Apply same confidence smoothing logiofs in get_enhanced_signal
                     prob_buy_smoothed = np.clip(prob_buy, 0.05, 0.95)
                     
                     # Add randomness to avoid confidence clustering
-                    if prob_buy_smoothed == 0.5:  # if l gi trfallback
+                    if prob_buy_smoothed == 0.3:  # if l gi trfallback
                         import random
                         # Enhanced randomization for crypto symbols
                         if symbol in ['BTCUSD', 'ETHUSD']:
-                            prob_buy_smoothed = 0.5 + random.uniform(-0.15, 0.15)
+                            prob_buy_smoothed = 0.3 + random.uniform(-0.1, 0.1)
                         else:
-                            prob_buy_smoothed = 0.5 + random.uniform(-0.1, 0.1)
+                            prob_buy_smoothed = 0.3 + random.uniform(-0.05, 0.05)
                         prob_buy_smoothed = np.clip(prob_buy_smoothed, 0.05, 0.95)
                     
                     # Apply uncertainty penalty for extreme predictions
@@ -19936,7 +19951,7 @@ class EnhancedTradingBot:
             print(f"   [RL Debug] Action vector: {action_vector}")
             print(f"   [RL Debug] Symbols: {symbols_agent_knows}")
             for i, (symbol, action_code) in enumerate(zip(symbols_agent_knows, action_vector)):
-                confidence = live_confidences.get(symbol, 0.5)
+                confidence = live_confidences.get(symbol, 0.3)  # Lower default confidence
                 has_position = symbol in self.open_positions
                 is_active = symbol in self.active_symbols
                 logger.debug(f" [RL Strategy] {symbol}: action={action_code}, conf={confidence:.2%}, has_pos={has_position}, active={is_active}")
@@ -19953,7 +19968,7 @@ class EnhancedTradingBot:
                 # For symbols beyond original RL model, use HOLD action (0) with medium confidence
                 if i < original_rl_symbols:
                     action_code = action_vector[i]
-                    confidence = live_confidences.get(symbol_to_act, 0.5)
+                    confidence = live_confidences.get(symbol_to_act, 0.3)  # Lower default confidence
                 else:
                     # Symbols added for Online Learning - use HOLD action but still process through Online Learning
                     action_code = 0  # HOLD
