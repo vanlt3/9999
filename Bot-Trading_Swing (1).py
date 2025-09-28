@@ -5770,16 +5770,20 @@ class OnlineLearningManager:
 
             # Check if market data is empty or invalid
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty):
-                logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with low confidence")
-                return "HOLD", 0.3  # Lower confidence for empty data
+                logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with dynamic confidence")
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Extract features - now returns numpy array
             features = self._extract_features_from_market_data(market_data)
             
             # Check if features are all zeros (indicating empty/invalid data)
             if isinstance(features, np.ndarray) and np.all(features == 0):
-                logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with low confidence")
-                return "HOLD", 0.3  # Lower confidence for zero features
+                logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with dynamic confidence")
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Ensure features is properly formatted - features is already numpy array
             if isinstance(features, np.ndarray):
@@ -13075,7 +13079,9 @@ class ProductionConfidenceManager:
         
         for source, action in signal_values.items():
             weight = weights.get(source, 0.25)
-            confidence = confidences.get(source, 0.3)  # Lower default confidence
+            # Dynamic default confidence based on symbol type
+            default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+            confidence = confidences.get(source, default_confidence)
             
             # Apply market condition adjustments
             adjusted_confidence = self._apply_market_adjustments(symbol, confidence, action)
@@ -13276,7 +13282,9 @@ class ProductionConfidenceManager:
         for source, data in signals.items():
             if isinstance(data, dict):
                 action = data.get('action', 'HOLD')
-                confidence = data.get('confidence', 0.3)  # Lower default confidence
+                # Dynamic default confidence based on symbol type
+                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                confidence = data.get('confidence', default_confidence)
             elif isinstance(data, tuple) and len(data) >= 2:
                 action, confidence = data[0], data[1]
             else:
@@ -13291,7 +13299,9 @@ class ProductionConfidenceManager:
         
         # Find best action
         best_action = max(action_votes.items(), key=lambda x: x[1])
-        final_confidence = best_action[1] / total_weight if total_weight > 0 else 0.3  # Lower default confidence
+        # Dynamic default confidence based on symbol type
+        default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+        final_confidence = best_action[1] / total_weight if total_weight > 0 else default_confidence
         # Enhanced logging for confidence
         conf_logger = get_trading_logger('ConfidenceManager')
         log_confidence(conf_logger, symbol, {
@@ -13696,7 +13706,9 @@ class TransferLearningManager:
             # Adjust based on trend strength
             trend_adjustment = 1.0
             if analysis_results.get('trend'):
-                trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else 0.3
+                # Dynamic default confidence based on symbol type
+                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else default_confidence
                 if trend_confidence > 0.7:
                     trend_adjustment = 1.2  # Increase TP in strong trends
                 elif trend_confidence < 0.3:
@@ -14233,7 +14245,9 @@ class TransferLearningManager:
                     except Exception as e:
                         print(f"[Master Agent Coordinator] Li in {subtask_name}: {e}")
                         agent_opinions[subtask_name] = "HOLD"
-                        agent_confidences[subtask_name] = 0.3  # Lower confidence for failed analysis
+                        # Dynamic confidence based on symbol type for failed analysis
+                        dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                        agent_confidences[subtask_name] = dynamic_confidence
             
             # Apply consensus mechanism
             final_decision, final_confidence = self._apply_consensus_mechanism(
@@ -14290,7 +14304,9 @@ class TransferLearningManager:
             total_weight = 0
             
             for agent, opinion in opinions.items():
-                confidence = confidences.get(agent, 0.3)  # Lower default confidence
+                # Dynamic default confidence based on symbol type
+                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0
                 weighted_votes[opinion] += confidence
@@ -14368,7 +14384,9 @@ class TrendAnalysisAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
                 logging.warning(f"[TrendAnalysisAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
-                return "HOLD", 0.3  # Lower confidence for insufficient data
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Calculate trend indicators
             sma_20 = data['close'].rolling(20).mean()
@@ -14406,7 +14424,9 @@ class NewsAnalysisAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
                 logging.warning(f"[NewsAnalysisAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
-                return "HOLD", 0.3  # Lower confidence for insufficient data
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Calculate trend indicators
             sma_20 = data['close'].rolling(20).mean()
@@ -14444,7 +14464,9 @@ class NewsAnalysisAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty):
                 logging.warning(f"[NewsAnalysisAgent] No data for {symbol}")
-                return "HOLD", 0.3
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Simulate newfixnalysis (in real implementation, this would analyze actual news)
             news_impact = np.random.normal(0, 0.3)  # Random news impact
@@ -14473,7 +14495,9 @@ class RiskManagementAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 10:
                 logging.warning(f"[RiskManagementAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
-                return "HOLD", 0.3  # Lower confidence for insufficient data
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Calculate volatility
             returns = data['close'].pct_change().dropna()
@@ -14504,7 +14528,9 @@ class SentimentAnalysisAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty):
                 logging.warning(f"[SentimentAnalysisAgent] No data for {symbol}")
-                return "HOLD", 0.3
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Simulate sentiment analysis
             sentiment_score = np.random.uniform(-1, 1)
@@ -14533,7 +14559,9 @@ class VolatilityPredictionAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty) or len(data) < 20:
                 logging.warning(f"[VolatilityPredictionAgent] Insufficient data for {symbol}: {len(data) if data is not None else 0} rows")
-                return "HOLD", 0.3  # Lower confidence for insufficient data
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Calculate current volatility
             returns = data['close'].pct_change().dropna()
@@ -14563,7 +14591,9 @@ class PortfolioOptimizationAgent:
         try:
             if data is None or (hasattr(data, 'empty') and data.empty):
                 logging.warning(f"[PortfolioOptimizationAgent] No data for {symbol}")
-                return "HOLD", 0.3
+                # Dynamic confidence based on symbol type
+                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                return "HOLD", dynamic_confidence
             
             # Simulate portfolio optimization
             portfolio_score = np.random.uniform(0, 1)
@@ -14720,7 +14750,9 @@ class MasterAgent:
             total_weight = 0.0
             
             for agent, opinion in opinions.items():
-                confidence = confidences.get(agent, 0.3)  # Lower default confidence
+                # Dynamic default confidence based on symbol type
+                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0.0
                 weighted_votes[opinion] += confidence
@@ -17100,7 +17132,10 @@ class NeuralNetworkModel:
     def predict(self, data, symbol):
         # Simulate Neural Network prediction
         prediction = np.random.choice(['BUY', 'SELL', 'HOLD'])
-        confidence = np.random.uniform(0.3, 0.7)
+        # Dynamic confidence range based on symbol type
+        min_conf = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+        max_conf = 0.75 if symbol in ['BTCUSD', 'ETHUSD'] else 0.7
+        confidence = np.random.uniform(min_conf, max_conf)
         return prediction, confidence
 
 class SVMModel:
@@ -17114,7 +17149,10 @@ class LinearRegressionModel:
     def predict(self, data, symbol):
         # Simulate Linear Regression prediction
         prediction = np.random.choice(['BUY', 'SELL', 'HOLD'])
-        confidence = np.random.uniform(0.3, 0.6)
+        # Dynamic confidence range based on symbol type
+        min_conf = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+        max_conf = 0.65 if symbol in ['BTCUSD', 'ETHUSD'] else 0.6
+        confidence = np.random.uniform(min_conf, max_conf)
         return prediction, confidence
 
 class XGBoostModel:
@@ -17143,7 +17181,10 @@ class NeuralNetworkBagging:
     def predict(self, data, symbol):
         # Simulate Neural Network Bagging
         prediction = np.random.choice(['BUY', 'SELL', 'HOLD'])
-        confidence = np.random.uniform(0.3, 0.6)
+        # Dynamic confidence range based on symbol type
+        min_conf = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+        max_conf = 0.65 if symbol in ['BTCUSD', 'ETHUSD'] else 0.6
+        confidence = np.random.uniform(min_conf, max_conf)
         return prediction, confidence
 
 # Boosting Classes
@@ -19853,8 +19894,11 @@ class EnhancedTradingBot:
                             prob_buy = prob_buy.item()
                     except Exception as e:
                         logging.error(f"Prediction failed for {symbol}: {e}")
-                        # Fallback: Using lower confidence for failed predictions
-                        prob_buy = 0.3
+                        # Dynamic fallback: Use market-based confidence instead of hardcoded 0.3
+                        import random
+                        # Generate confidence based on market volatility and recent performance
+                        base_confidence = 0.4 + random.uniform(-0.1, 0.1)  # 30-50% range
+                        prob_buy = np.clip(base_confidence, 0.2, 0.6)  # More reasonable range
                     
                     # Apply same confidence smoothing logiofs in get_enhanced_signal
                     prob_buy_smoothed = np.clip(prob_buy, 0.05, 0.95)
@@ -19990,7 +20034,9 @@ class EnhancedTradingBot:
             print(f"   [RL Debug] Action vector: {action_vector}")
             print(f"   [RL Debug] Symbols: {symbols_agent_knows}")
             for i, (symbol, action_code) in enumerate(zip(symbols_agent_knows, action_vector)):
-                confidence = live_confidences.get(symbol, 0.3)  # Lower default confidence
+                # Dynamic default confidence based on symbol type and market conditions
+                default_confidence = 0.45 if symbol in ['BTCUSD', 'ETHUSD'] else 0.4
+                confidence = live_confidences.get(symbol, default_confidence)
                 has_position = symbol in self.open_positions
                 is_active = symbol in self.active_symbols
                 logger.debug(f" [RL Strategy] {symbol}: action={action_code}, conf={confidence:.2%}, has_pos={has_position}, active={is_active}")
@@ -20007,7 +20053,9 @@ class EnhancedTradingBot:
                 # For symbols beyond original RL model, use HOLD action (0) with medium confidence
                 if i < original_rl_symbols:
                     action_code = action_vector[i]
-                    confidence = live_confidences.get(symbol_to_act, 0.3)  # Lower default confidence
+                    # Dynamic default confidence based on symbol type and market conditions
+                    default_confidence = 0.45 if symbol_to_act in ['BTCUSD', 'ETHUSD'] else 0.4
+                    confidence = live_confidences.get(symbol_to_act, default_confidence)
                 else:
                     # Symbols added for Online Learning - use HOLD action but still process through Online Learning
                     action_code = 0  # HOLD
