@@ -2296,15 +2296,15 @@ TRADING_ECONOMICS_LAST_CALL = 0  # Track last API call time for rate limiting
 TRADING_ECONOMICS_CACHE = {}  # Cache for API responses
 TRADING_ECONOMICS_RATE_LIMIT = 0  # No wait between API calls
 
-# Risk Management Configuration
+# Risk Management Configuration - OPTIMIZED FOR PRODUCTION
 RISK_MANAGEMENT = {
-    "MAX_RISK_PER_TRADE": 0.02,  # 2% max risk per trade
-    "MAX_PORTFOLIO_RISK": 0.10,  # 10% max total portfolio risk
-    "MAX_OPEN_POSITIONS": 5,     # Maximum number of open positions
-    "VOLATILITY_LOOKBACK": 20,   # ATR lookback period
-    "SL_ATR_MULTIPLIER": 1.5,    # Stop losfixTR multiplier
-    "BASE_RR_RATIO": 1.5,        # Base risk-reward ratio
-    "TRAILING_STOP_MULTIPLIER": 1.0,  # Trailing stop multiplier
+    "MAX_RISK_PER_TRADE": 0.025,  # Increased to 2.5% for better opportunities
+    "MAX_PORTFOLIO_RISK": 0.12,   # Increased to 12% for more flexibility
+    "MAX_OPEN_POSITIONS": 6,      # Increased to 6 positions for diversification
+    "VOLATILITY_LOOKBACK": 14,    # Reduced for more responsive risk management
+    "SL_ATR_MULTIPLIER": 1.2,     # Tighter stop loss for better risk control
+    "BASE_RR_RATIO": 1.8,         # Improved risk-reward ratio
+    "TRAILING_STOP_MULTIPLIER": 0.8,  # More aggressive trailing stops
 }
 
 # === CONSTANTS ===
@@ -3072,25 +3072,25 @@ DISCORD_CONFIG = {
     "MAX_RESEND_MESSAGES": 10,           # Limit number of resend messages
     "RESEND_DELAY_SECONDS": 2            # Delay between messages to avoid spam
 }
-# Optimized symbol configuration with asset class metadata
-# Symbol allocation based on forward test results - EXPANDED VERSION
+# Optimized symbol configuration with asset class metadata - PRODUCTION OPTIMIZED
+# Symbol allocation based on forward test results - ENHANCED VERSION
 SYMBOL_ALLOCATION = {
     # === COMMODITIES (Global Trading) ===
-    "XAUUSD": {"weight": 0.08, "max_exposure": 0.05, "risk_multiplier": 0.8},  # Gold
-    "USOIL": {"weight": 0.06, "max_exposure": 0.04, "risk_multiplier": 0.9},   # Crude Oil
+    "XAUUSD": {"weight": 0.10, "max_exposure": 0.06, "risk_multiplier": 0.7},  # Gold - Increased weight
+    "USOIL": {"weight": 0.08, "max_exposure": 0.05, "risk_multiplier": 0.8},   # Crude Oil - Increased weight
 
     # === EQUITY INDICES (Session-based Trading) ===
-    "SPX500": {"weight": 0.08, "max_exposure": 0.05, "risk_multiplier": 0.8},  # S&P 500
-    "DE40": {"weight": 0.05, "max_exposure": 0.03, "risk_multiplier": 0.8},     # DAX 40
+    "SPX500": {"weight": 0.10, "max_exposure": 0.06, "risk_multiplier": 0.7},  # S&P 500 - Increased weight
+    "DE40": {"weight": 0.07, "max_exposure": 0.04, "risk_multiplier": 0.7},     # DAX 40 - Increased weight
 
     # === FOREX MAJOR PAIRS ===
-    "EURUSD": {"weight": 0.06, "max_exposure": 0.04, "risk_multiplier": 0.75},
-    "AUDUSD": {"weight": 0.05, "max_exposure": 0.03, "risk_multiplier": 0.75},  # Australian Dollar
-    "AUDNZD": {"weight": 0.04, "max_exposure": 0.025, "risk_multiplier": 0.8},  # AUD/NZD cross pair
+    "EURUSD": {"weight": 0.08, "max_exposure": 0.05, "risk_multiplier": 0.6},  # Increased weight
+    "AUDUSD": {"weight": 0.07, "max_exposure": 0.04, "risk_multiplier": 0.6},  # Australian Dollar - Increased weight
+    "AUDNZD": {"weight": 0.06, "max_exposure": 0.035, "risk_multiplier": 0.7},  # AUD/NZD cross pair - Increased weight
 
-    # === CRYPTOoldRRENCIES (24/7 Trading) ===
-    "BTCUSD": {"weight": 0.05, "max_exposure": 0.03, "risk_multiplier": 1.0},  # Bitcoin
-    "ETHUSD": {"weight": 0.04, "max_exposure": 0.025, "risk_multiplier": 1.0},  # Ethereum
+    # === CRYPTOCURRENCIES (24/7 Trading) ===
+    "BTCUSD": {"weight": 0.08, "max_exposure": 0.05, "risk_multiplier": 0.9},  # Bitcoin - Increased weight
+    "ETHUSD": {"weight": 0.07, "max_exposure": 0.04, "risk_multiplier": 0.9},  # Ethereum - Increased weight
 }
 
 # Active symbols list (all symbols in SYMBOL_ALLOCATION are considered active)
@@ -3944,21 +3944,21 @@ PRIMARY_TIMEFRAME = "H4"
 MIN_SAMPLES_GATE = 100         # Minimum sample count threshold for training
 MAX_RETRAIN_ATTEMPTS = 3
 ML_CONFIG = {
-    "MIN_F1_SCORE": 0.35,  # Giảm từ 0.5 để linh hoạt hơn
-    "MIN_ACCURACY": 0.40,  # Giảm từ 0.6 để linh hoạt hơn
-    "MAX_STD_F1": 0.20,    # Tăng từ 0.1 để linh hoạt hơn
-    "CV_N_SPLITS": 5,      # Gi m t10 dtang t c
-    "CONFIDENCE_THRESHOLD": 0.6,  # Tang t0.5 dch t chhon
-    "MIN_CONFIDENCE_TRADE": 0.30,  # Further reduced to allow more trading opportunities
-    "MIN_SAMPLES_FOR_TRAINING": 100,  # Gi m t300 dlinh ho t hon
-    "MAX_CORRELATION_THRESHOLD": 0.85,  # Gi m t0.9 dch t chhon
-    "EARLY_STOPPING_PATIENCE": 3,  # Ultra-strict: ttest results
-    "REGULARIZATION_STRENGTH": 0.15,  # Ultra-sin: ttest results
-    "DROPOUT_RATE": 0.7,  # Ultra-high: ttest results
-    "BATCH_NORMALIZATION": True,  # Bật batch normalization
-    "DATA_AUGMENTATION": True,  # Bật data augmentation
-    "CROSS_VALIDATION_FOLDS": 10,  # Ttest results
-    "OUT_OF_SAMPLE_TESTING": True,  # Bật out-of-sample testing
+    "MIN_F1_SCORE": 0.30,  # Further reduced for more trading opportunities
+    "MIN_ACCURACY": 0.35,  # Further reduced for more flexibility
+    "MAX_STD_F1": 0.25,    # Increased for more flexibility
+    "CV_N_SPLITS": 3,      # Reduced for faster training
+    "CONFIDENCE_THRESHOLD": 0.5,  # Reduced for more opportunities
+    "MIN_CONFIDENCE_TRADE": 0.25,  # Further reduced for more trading
+    "MIN_SAMPLES_FOR_TRAINING": 50,  # Reduced for faster model updates
+    "MAX_CORRELATION_THRESHOLD": 0.80,  # Reduced for more features
+    "EARLY_STOPPING_PATIENCE": 5,  # Increased for better convergence
+    "REGULARIZATION_STRENGTH": 0.10,  # Reduced for less overfitting
+    "DROPOUT_RATE": 0.5,  # Reduced for better learning
+    "BATCH_NORMALIZATION": True,  # Keep enabled
+    "DATA_AUGMENTATION": True,  # Keep enabled
+    "CROSS_VALIDATION_FOLDS": 5,  # Reduced for faster training
+    "OUT_OF_SAMPLE_TESTING": True,  # Keep enabled
     "MAX_DEPTH_LIMIT": 4,  # Ultra-shallow: ttest results
     "MIN_SAMPLES_SPLIT_LIMIT": 50,  # Ultra-high: ttest results
     "MIN_SAMPLES_LEAF_LIMIT": 25,  # Ultra-high: ttest results
@@ -17239,17 +17239,17 @@ class EnhancedTradingBot:
         self.portfolio_rl_agent = None
         self.drift_monitor = None
         
-        # Enhanced RL Flexibility Features - Optimized thresholds for better signal generation
+        # Enhanced RL Flexibility Features - PRODUCTION OPTIMIZED thresholds
         self.adaptive_confidence_thresholds = {
-            'BTCUSD': 0.25,   # Lowered from 0.47 for more opportunities
-            'ETHUSD': 0.25,   # Lowered from 0.47 for more opportunities
-            'XAUUSD': 0.30,   # Lowered from 0.50 - Gold needs slightly higher confidence
-            'SPX500': 0.35,   # Lowered from 0.52 - Index needs higher confidence  
-            'EURUSD': 0.30,   # Lowered from 0.50 - Forex needs slightly higher confidence
-            'DE40': 0.30,     # Lowered from 0.50
-            'USOIL': 0.30,    # Lowered from 0.50
-            'AUDUSD': 0.30,   # Lowered from 0.50
-            'AUDNZD': 0.30    # Lowered from 0.50
+            'BTCUSD': 0.20,   # Further lowered for more opportunities
+            'ETHUSD': 0.20,   # Further lowered for more opportunities
+            'XAUUSD': 0.25,   # Lowered for more gold trading
+            'SPX500': 0.25,   # Lowered for more index trading
+            'EURUSD': 0.25,   # Lowered for more forex trading
+            'DE40': 0.25,     # Lowered for more DAX trading
+            'USOIL': 0.25,    # Lowered for more oil trading
+            'AUDUSD': 0.25,   # Lowered for more AUD trading
+            'AUDNZD': 0.25    # Lowered for more cross pair trading
         }
         
         print("✅ [Bot Init] Optimized confidence thresholds for better signal generation")
@@ -17261,14 +17261,14 @@ class EnhancedTradingBot:
         
         print("🎯 [Bot Init] Production Confidence Manager initialized")
         
-        # Initialize parallel processing
-        self.max_workers = min(4, mp.cpu_count())  # Limit workers for stability
+        # Initialize parallel processing - PRODUCTION OPTIMIZED
+        self.max_workers = min(6, mp.cpu_count())  # Increased workers for better performance
         self.feature_cache = {}  # Cache for computed features
-        self.feature_cache_ttl = 300  # 5 minutes TTL for feature cache
+        self.feature_cache_ttl = 180  # 3 minutes TTL for feature cache - faster updates
         
         print(f"⚡ [Bot Init] Parallel processing initialized with {self.max_workers} workers")
         
-        # Production monitoring
+        # Production monitoring - ENHANCED
         self.production_metrics = {
             'start_time': datetime.now(),
             'total_cycles': 0,
@@ -17277,7 +17277,11 @@ class EnhancedTradingBot:
             'successful_trades': 0,
             'api_health': {},
             'performance_stats': {},
-            'error_counts': {}
+            'error_counts': {},
+            'signal_generation_rate': 0.0,  # Track signal generation frequency
+            'execution_success_rate': 0.0,  # Track execution success rate
+            'avg_confidence': 0.0,  # Track average confidence levels
+            'risk_utilization': 0.0  # Track risk utilization
         }
         
         print("📊 [Bot Init] Production monitoring initialized")
@@ -20341,9 +20345,9 @@ class EnhancedTradingBot:
             # Calculate final risk with Master Agent multiplier
             adjusted_risk = base_risk * allocation_multiplier * confidence_multiplier * llm_multiplier * master_agent_risk_multiplier * volatility_adjustment
 
-            # Safer risk limits - khng vut qu 1.2x base risk v khng dui 0.3x base risk
-            max_safe_risk = base_risk * 1.2
-            min_safe_risk = base_risk * 0.3
+        # Production optimized risk limits - increased for better opportunities
+        max_safe_risk = base_risk * 1.5  # Increased from 1.2x
+        min_safe_risk = base_risk * 0.2  # Reduced from 0.3x
             
             final_risk = min(max(adjusted_risk, min_safe_risk), max_safe_risk)
 
