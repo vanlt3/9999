@@ -20370,9 +20370,9 @@ class EnhancedTradingBot:
             # Calculate final risk with Master Agent multiplier
             adjusted_risk = base_risk * allocation_multiplier * confidence_multiplier * llm_multiplier * master_agent_risk_multiplier * volatility_adjustment
 
-        # Production optimized risk limits - increased for better opportunities
-        max_safe_risk = base_risk * 1.5  # Increased from 1.2x
-        min_safe_risk = base_risk * 0.2  # Reduced from 0.3x
+            # Production optimized risk limits - increased for better opportunities
+            max_safe_risk = base_risk * 1.5  # Increased from 1.2x
+            min_safe_risk = base_risk * 0.2  # Reduced from 0.3x
             
             final_risk = min(max(adjusted_risk, min_safe_risk), max_safe_risk)
 
