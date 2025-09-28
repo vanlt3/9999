@@ -12952,11 +12952,11 @@ class ProductionConfidenceManager:
         self.adaptive_weights = {}    # Dynamic weights for different signals
         self.volatility_adjustments = {}  # Volatility-based adjustments
         
-        # Production-ready thresholds
+        # Production-ready thresholds - ADJUSTED FOR BETTER TRADING OPPORTUNITIES
         self.base_thresholds = {
-            'BUY': 0.15,   # Lower threshold for buy signals
-            'SELL': 0.15,  # Lower threshold for sell signals
-            'HOLD': 0.35   # Higher threshold for hold (no action)
+            'BUY': 0.25,   # Increased threshold for buy signals (was 0.15)
+            'SELL': 0.25,  # Increased threshold for sell signals (was 0.15)
+            'HOLD': 0.20   # Lower threshold for hold to allow more trading (was 0.35)
         }
         
         # Confidence calculation methods
@@ -13323,21 +13323,21 @@ class RLPerformanceTracker:
     def get_adaptive_threshold(self, symbol):
         """Get adaptive confidence threshold based on performance"""
         if symbol not in self.symbol_performance:
-            return 0.25  # Much lower default threshold for more opportunities
+            return 0.20  # Lower default threshold for more opportunities
             
         perf = self.symbol_performance[symbol]
         if perf['total_actions'] < 10:
-            return 0.25  # Not enough data, use lower threshold
+            return 0.20  # Not enough data, use lower threshold
             
         success_rate = perf['successful_actions'] / perf['total_actions']
         
         # Adjust threshold based on success rate (more aggressive)
         if success_rate > 0.7:
-            return 0.42  # Lower threshold for high-performing symbols
+            return 0.15  # Lower threshold for high-performing symbols
         elif success_rate < 0.4:
-            return 0.52  # Higher threshold for low-performing symbols
+            return 0.25  # Higher threshold for low-performing symbols
         else:
-            return 0.47  # Reduced default threshold
+            return 0.20  # Reduced default threshold
 
 class DynamicActionSpace:
     """Dynamiofction space based on market conditions"""
@@ -14611,6 +14611,11 @@ class MasterAgent:
         logging.info(f"[Master Agent Coordinator] Starting coordinate_decision for {symbol}")
         
         try:
+            # Check if market_data is empty or insufficient
+            if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
+                logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
+                return "HOLD", 0.25  # Lower confidence for insufficient data
+            
             # Decompose task
             subtasks = self.decompose_task(task_type, market_data)
             print(f" [Master Agent Coordinator] Decomposed tasks: {list(subtasks.keys())}")
