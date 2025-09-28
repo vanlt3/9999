@@ -3949,7 +3949,7 @@ ML_CONFIG = {
     "MAX_STD_F1": 0.20,    # Tăng từ 0.1 để linh hoạt hơn
     "CV_N_SPLITS": 5,      # Gi m t10 dtang t c
     "CONFIDENCE_THRESHOLD": 0.6,  # Tang t0.5 dch t chhon
-    "MIN_CONFIDENCE_TRADE": 0.45,  # Reduced from 0.50 to increase trade opportunities
+    "MIN_CONFIDENCE_TRADE": 0.30,  # Further reduced to allow more trading opportunities
     "MIN_SAMPLES_FOR_TRAINING": 100,  # Gi m t300 dlinh ho t hon
     "MAX_CORRELATION_THRESHOLD": 0.85,  # Gi m t0.9 dch t chhon
     "EARLY_STOPPING_PATIENCE": 3,  # Ultra-strict: ttest results
@@ -12952,11 +12952,11 @@ class ProductionConfidenceManager:
         self.adaptive_weights = {}    # Dynamic weights for different signals
         self.volatility_adjustments = {}  # Volatility-based adjustments
         
-        # Production-ready thresholds - ADJUSTED FOR BETTER TRADING OPPORTUNITIES
+        # Production-ready thresholds - OPTIMIZED FOR BETTER TRADING OPPORTUNITIES
         self.base_thresholds = {
-            'BUY': 0.25,   # Increased threshold for buy signals (was 0.15)
-            'SELL': 0.25,  # Increased threshold for sell signals (was 0.15)
-            'HOLD': 0.20   # Lower threshold for hold to allow more trading (was 0.35)
+            'BUY': 0.20,   # Lower threshold for buy signals to allow more opportunities
+            'SELL': 0.20,  # Lower threshold for sell signals to allow more opportunities
+            'HOLD': 0.15   # Much lower threshold for hold to allow more trading (was 0.35)
         }
         
         # Confidence calculation methods
@@ -13223,18 +13223,18 @@ class ProductionConfidenceManager:
     def get_optimal_threshold(self, symbol: str, action: str) -> float:
         """Get optimal threshold based on historical performance"""
         if symbol not in self.performance_metrics:
-            return self.base_thresholds.get(action, 0.2)
+            return self.base_thresholds.get(action, 0.15)
         
         perf = self.performance_metrics[symbol]
         success_rate = perf.get('success_rate', 0.5)
         
         # Adjust threshold based on success rate
-        base_threshold = self.base_thresholds.get(action, 0.2)
+        base_threshold = self.base_thresholds.get(action, 0.15)
         
         if success_rate > 0.7:
-            return max(0.1, base_threshold * 0.8)  # Lower threshold for good performers
+            return max(0.05, base_threshold * 0.7)  # Much lower threshold for good performers
         elif success_rate < 0.3:
-            return min(0.5, base_threshold * 1.5)  # Higher threshold for poor performers
+            return min(0.4, base_threshold * 1.3)  # Slightly higher threshold for poor performers
         else:
             return base_threshold
     
@@ -20135,21 +20135,36 @@ class EnhancedTradingBot:
                         # Trigger online learning feedback loop
                         self._trigger_online_learning_feedback_enhanced(symbol_to_act, final_decision, final_confidence, market_data=symbol_data)
                     
-                    elif action_code == 0:  # HOLD actions get simplified processing
-                        print(f"   [Debug] {symbol_to_act}: HOLD action, applying unified processing")
+                    elif action_code == 0:  # HOLD actions get enhanced processing to allow BUY/SELL conversion
+                        print(f"   [Debug] {symbol_to_act}: HOLD action, applying enhanced processing for potential BUY/SELL conversion")
                         
-                        # For HOLD actions, use simple decision combination
+                        # For HOLD actions, check if we can convert to BUY/SELL based on other signals
                         action_name = "HOLD"
                         adjusted_confidence = confidence
                         adaptive_threshold = self.production_confidence_manager.get_optimal_threshold(symbol_to_act, action_name)
                         
-                        # Combine decisions with equal weighting for HOLD actions
+                        # Combine decisions with enhanced weighting for HOLD actions
                         final_decision, final_confidence = self._combine_decisions_unified(action_name, adjusted_confidence,
                             master_decision, master_confidence,
                             ensemble_decision, ensemble_confidence,
                             online_decision, online_confidence,
                             symbol_to_act
                         )
+                        
+                        # Enhanced HOLD logic: Check if we can convert to BUY/SELL
+                        if final_decision == "HOLD" and final_confidence > 0.4:  # If confidence is decent
+                            # Check if other signals suggest BUY/SELL
+                            buy_signals = sum(1 for decision in [master_decision, ensemble_decision, online_decision] if decision == "BUY")
+                            sell_signals = sum(1 for decision in [master_decision, ensemble_decision, online_decision] if decision == "SELL")
+                            
+                            if buy_signals >= 2:  # If 2+ signals suggest BUY
+                                final_decision = "BUY"
+                                final_confidence = min(0.8, final_confidence * 1.2)  # Boost confidence
+                                print(f"   [HOLD Conversion] {symbol_to_act}: Converting HOLD to BUY (2+ BUY signals)")
+                            elif sell_signals >= 2:  # If 2+ signals suggest SELL
+                                final_decision = "SELL"
+                                final_confidence = min(0.8, final_confidence * 1.2)  # Boost confidence
+                                print(f"   [HOLD Conversion] {symbol_to_act}: Converting HOLD to SELL (2+ SELL signals)")
                         # Enhanced logging for confidence
                         conf_logger = get_trading_logger('ConfidenceManager')
                         log_confidence(conf_logger, symbol, {
