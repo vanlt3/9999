@@ -14172,6 +14172,11 @@ class TransferLearningManager:
         logging.info(f"[Master Agent Coordinator] Starting coordinate_decision for {symbol}")
         
         try:
+            # Check if market_data is empty or insufficient
+            if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
+                logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
+                return "HOLD", 0.25  # Lower confidence for insufficient data
+            
             # Decompose task
             subtasks = self.decompose_task(task_type, market_data)
             print(f" [Master Agent Coordinator] Decomposed tasks: {list(subtasks.keys())}")
