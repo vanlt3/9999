@@ -5771,8 +5771,17 @@ class OnlineLearningManager:
             # Check if market data is empty or invalid
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty):
                 logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with dynamic confidence")
-                # Dynamic confidence based on symbol type
-                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    dynamic_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    dynamic_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    dynamic_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    dynamic_confidence = 0.35  # Standard for major forex
+                else:
+                    dynamic_confidence = 0.33  # Other symbols
                 return "HOLD", dynamic_confidence
             
             # Extract features - now returns numpy array
@@ -5781,8 +5790,17 @@ class OnlineLearningManager:
             # Check if features are all zeros (indicating empty/invalid data)
             if isinstance(features, np.ndarray) and np.all(features == 0):
                 logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with dynamic confidence")
-                # Dynamic confidence based on symbol type
-                dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    dynamic_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    dynamic_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    dynamic_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    dynamic_confidence = 0.35  # Standard for major forex
+                else:
+                    dynamic_confidence = 0.33  # Other symbols
                 return "HOLD", dynamic_confidence
             
             # Ensure features is properly formatted - features is already numpy array
@@ -13080,7 +13098,17 @@ class ProductionConfidenceManager:
         for source, action in signal_values.items():
             weight = weights.get(source, 0.25)
             # Dynamic default confidence based on symbol type
-            default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+            # Dynamic confidence based on symbol type and market conditions
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                default_confidence = 0.38  # Higher for major crypto
+            elif symbol in ['XAUUSD']:
+                default_confidence = 0.36  # Moderate for gold
+            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                default_confidence = 0.32  # Lower for volatile indices
+            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                default_confidence = 0.35  # Standard for major forex
+            else:
+                default_confidence = 0.33  # Other symbols
             confidence = confidences.get(source, default_confidence)
             
             # Apply market condition adjustments
@@ -13195,6 +13223,95 @@ class ProductionConfidenceManager:
         
         self.market_conditions[symbol].update(market_data)
     
+    def get_dynamic_confidence_for_component(self, symbol, component, action="HOLD", market_data=None):
+        """
+        Get dynamic confidence for specific components (RL, Master Agent, Online Learning)
+        """
+        try:
+            # Base confidence values by component
+            base_confidences = {
+                'rl': 0.45,
+                'master_agent': 0.35,
+                'online_learning': 0.4,
+                'ensemble': 0.4
+            }
+            
+            base_confidence = base_confidences.get(component, 0.4)
+            
+            # Apply symbol-specific adjustments
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                # Major crypto pairs get higher confidence
+                multipliers = {
+                    'rl': 1.0,          # Keep RL as is for major crypto
+                    'master_agent': 0.85, # Reduce master agent slightly
+                    'online_learning': 0.95, # Keep online learning high
+                    'ensemble': 0.9
+                }
+            elif symbol in ['XAUUSD']:
+                # Gold gets moderate confidence
+                multipliers = {
+                    'rl': 0.95,
+                    'master_agent': 0.9,
+                    'online_learning': 0.9,
+                    'ensemble': 0.9
+                }
+            elif symbol in EQUITY_INDICES:
+                # Equity indices get lower confidence due to volatility
+                multipliers = {
+                    'rl': 0.9,
+                    'master_agent': 0.8,
+                    'online_learning': 0.85,
+                    'ensemble': 0.85
+                }
+            else:
+                # Other symbols get standard confidence
+                multipliers = {
+                    'rl': 0.95,
+                    'master_agent': 0.85,
+                    'online_learning': 0.9,
+                    'ensemble': 0.9
+                }
+            
+            # Apply component-specific multiplier
+            confidence = base_confidence * multipliers.get(component, 0.9)
+            
+            # Market data adjustments
+            if market_data is not None and not market_data.empty:
+                try:
+                    # Check recent volatility
+                    if len(market_data) >= 20:
+                        recent_returns = market_data['close'].pct_change().tail(20)
+                        volatility = recent_returns.std()
+                        
+                        if volatility > 0.03:  # High volatility
+                            confidence *= 0.9
+                        elif volatility < 0.01:  # Low volatility
+                            confidence *= 1.05
+                    
+                    # Check trend strength
+                    if len(market_data) >= 10:
+                        recent_closes = market_data['close'].tail(10)
+                        trend_strength = abs(recent_closes.iloc[-1] - recent_closes.iloc[0]) / recent_closes.iloc[0]
+                        
+                        if trend_strength > 0.02:  # Strong trend
+                            confidence *= 1.05
+                        elif trend_strength < 0.005:  # Weak trend
+                            confidence *= 0.95
+                            
+                except Exception as e:
+                    logger.debug(f"Error in market data adjustments for {symbol}: {e}")
+            
+            # Action-specific adjustments
+            if action in ['BUY', 'SELL']:
+                confidence *= 1.02  # Slight boost for directional actions
+            
+            # Clamp between reasonable bounds
+            return max(0.15, min(0.75, confidence))
+            
+        except Exception as e:
+            logger.error(f"Error calculating dynamic confidence for {component} on {symbol}: {e}")
+            return base_confidences.get(component, 0.4)
+
     def _store_confidence_data(self, symbol: str, signals: dict, decision: str, confidence: float):
         """Store confidence data for learning and improvement"""
         if symbol not in self.confidence_history:
@@ -13283,7 +13400,17 @@ class ProductionConfidenceManager:
             if isinstance(data, dict):
                 action = data.get('action', 'HOLD')
                 # Dynamic default confidence based on symbol type
-                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                default_confidence = 0.38  # Higher for major crypto
+            elif symbol in ['XAUUSD']:
+                default_confidence = 0.36  # Moderate for gold
+            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                default_confidence = 0.32  # Lower for volatile indices
+            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                default_confidence = 0.35  # Standard for major forex
+            else:
+                default_confidence = 0.33  # Other symbols
                 confidence = data.get('confidence', default_confidence)
             elif isinstance(data, tuple) and len(data) >= 2:
                 action, confidence = data[0], data[1]
@@ -13300,7 +13427,17 @@ class ProductionConfidenceManager:
         # Find best action
         best_action = max(action_votes.items(), key=lambda x: x[1])
         # Dynamic default confidence based on symbol type
-        default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+        # Dynamic confidence based on symbol type and market conditions
+        if symbol in ['BTCUSD', 'ETHUSD']:
+            default_confidence = 0.38  # Higher for major crypto
+        elif symbol in ['XAUUSD']:
+            default_confidence = 0.36  # Moderate for gold
+        elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+            default_confidence = 0.32  # Lower for volatile indices
+        elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+            default_confidence = 0.35  # Standard for major forex
+        else:
+            default_confidence = 0.33  # Other symbols
         final_confidence = best_action[1] / total_weight if total_weight > 0 else default_confidence
         # Enhanced logging for confidence
         conf_logger = get_trading_logger('ConfidenceManager')
@@ -13707,7 +13844,17 @@ class TransferLearningManager:
             trend_adjustment = 1.0
             if analysis_results.get('trend'):
                 # Dynamic default confidence based on symbol type
-                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                default_confidence = 0.38  # Higher for major crypto
+            elif symbol in ['XAUUSD']:
+                default_confidence = 0.36  # Moderate for gold
+            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                default_confidence = 0.32  # Lower for volatile indices
+            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                default_confidence = 0.35  # Standard for major forex
+            else:
+                default_confidence = 0.33  # Other symbols
                 trend_confidence = analysis_results['trend'][1] if isinstance(analysis_results['trend'], tuple) else default_confidence
                 if trend_confidence > 0.7:
                     trend_adjustment = 1.2  # Increase TP in strong trends
@@ -14212,7 +14359,9 @@ class TransferLearningManager:
             # Check if market_data is empty or insufficient
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
                 logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
-                return "HOLD", 0.25  # Lower confidence for insufficient data
+                # Use dynamic confidence for insufficient data
+                dynamic_confidence = 0.25 if symbol in ['BTCUSD', 'ETHUSD'] else 0.2
+                return "HOLD", dynamic_confidence
             
             # Decompose task
             subtasks = self.decompose_task(task_type, market_data)
@@ -14245,8 +14394,17 @@ class TransferLearningManager:
                     except Exception as e:
                         print(f"[Master Agent Coordinator] Li in {subtask_name}: {e}")
                         agent_opinions[subtask_name] = "HOLD"
-                        # Dynamic confidence based on symbol type for failed analysis
-                        dynamic_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                        # Dynamic confidence based on symbol type and market conditions for failed analysis
+                        if symbol in ['BTCUSD', 'ETHUSD']:
+                            dynamic_confidence = 0.35  # Major crypto
+                        elif symbol in ['XAUUSD']:
+                            dynamic_confidence = 0.32  # Gold
+                        elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                            dynamic_confidence = 0.28  # Major indices
+                        elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                            dynamic_confidence = 0.31  # Major forex
+                        else:
+                            dynamic_confidence = 0.3   # Other symbols
                         agent_confidences[subtask_name] = dynamic_confidence
             
             # Apply consensus mechanism
@@ -14305,7 +14463,17 @@ class TransferLearningManager:
             
             for agent, opinion in opinions.items():
                 # Dynamic default confidence based on symbol type
-                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                default_confidence = 0.38  # Higher for major crypto
+            elif symbol in ['XAUUSD']:
+                default_confidence = 0.36  # Moderate for gold
+            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                default_confidence = 0.32  # Lower for volatile indices
+            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                default_confidence = 0.35  # Standard for major forex
+            else:
+                default_confidence = 0.33  # Other symbols
                 confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0
@@ -14669,7 +14837,9 @@ class MasterAgent:
             # Check if market_data is empty or insufficient
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
                 logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
-                return "HOLD", 0.25  # Lower confidence for insufficient data
+                # Use dynamic confidence for insufficient data
+                dynamic_confidence = 0.25 if symbol in ['BTCUSD', 'ETHUSD'] else 0.2
+                return "HOLD", dynamic_confidence
             
             # Decompose task
             subtasks = self.decompose_task(task_type, market_data)
@@ -14751,7 +14921,17 @@ class MasterAgent:
             
             for agent, opinion in opinions.items():
                 # Dynamic default confidence based on symbol type
-                default_confidence = 0.35 if symbol in ['BTCUSD', 'ETHUSD'] else 0.3
+                # Dynamic confidence based on symbol type and market conditions
+            if symbol in ['BTCUSD', 'ETHUSD']:
+                default_confidence = 0.38  # Higher for major crypto
+            elif symbol in ['XAUUSD']:
+                default_confidence = 0.36  # Moderate for gold
+            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                default_confidence = 0.32  # Lower for volatile indices
+            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                default_confidence = 0.35  # Standard for major forex
+            else:
+                default_confidence = 0.33  # Other symbols
                 confidence = confidences.get(agent, default_confidence)
                 if opinion not in weighted_votes:
                     weighted_votes[opinion] = 0.0
@@ -20034,9 +20214,10 @@ class EnhancedTradingBot:
             print(f"   [RL Debug] Action vector: {action_vector}")
             print(f"   [RL Debug] Symbols: {symbols_agent_knows}")
             for i, (symbol, action_code) in enumerate(zip(symbols_agent_knows, action_vector)):
-                # Dynamic default confidence based on symbol type and market conditions
-                default_confidence = 0.45 if symbol in ['BTCUSD', 'ETHUSD'] else 0.4
-                confidence = live_confidences.get(symbol, default_confidence)
+                # Dynamic confidence based on symbol type and market conditions
+                symbol_data = live_data_cache.get(symbol, pd.DataFrame())
+                dynamic_confidence = self.get_dynamic_confidence_for_component(symbol, 'rl', 'HOLD', symbol_data)
+                confidence = live_confidences.get(symbol, dynamic_confidence)
                 has_position = symbol in self.open_positions
                 is_active = symbol in self.active_symbols
                 logger.debug(f" [RL Strategy] {symbol}: action={action_code}, conf={confidence:.2%}, has_pos={has_position}, active={is_active}")
@@ -20053,13 +20234,16 @@ class EnhancedTradingBot:
                 # For symbols beyond original RL model, use HOLD action (0) with medium confidence
                 if i < original_rl_symbols:
                     action_code = action_vector[i]
-                    # Dynamic default confidence based on symbol type and market conditions
-                    default_confidence = 0.45 if symbol_to_act in ['BTCUSD', 'ETHUSD'] else 0.4
-                    confidence = live_confidences.get(symbol_to_act, default_confidence)
+                    # Dynamic confidence based on symbol type and market conditions
+                    symbol_data = live_data_cache.get(symbol_to_act, pd.DataFrame())
+                    action_name = ['HOLD', 'BUY', 'SELL'][action_code] if action_code in [0, 1, 2] else 'HOLD'
+                    dynamic_confidence = self.get_dynamic_confidence_for_component(symbol_to_act, 'rl', action_name, symbol_data)
+                    confidence = live_confidences.get(symbol_to_act, dynamic_confidence)
                 else:
                     # Symbols added for Online Learning - use HOLD action but still process through Online Learning
                     action_code = 0  # HOLD
-                    confidence = 0.5  # Medium confidence
+                    symbol_data = live_data_cache.get(symbol_to_act, pd.DataFrame())
+                    confidence = self.get_dynamic_confidence_for_component(symbol_to_act, 'rl', 'HOLD', symbol_data)
                     logger.info(f"🔄 [Online Learning] Processing {symbol_to_act} (not in original RL model) with Online Learning")
                 
                 has_position = symbol_to_act in self.open_positions
@@ -20134,7 +20318,9 @@ class EnhancedTradingBot:
                     except Exception as e:
                         logger.error(f"[Master Agent] ❌ Error analyzing {symbol_to_act}: {e}")
                         print(f"   [Master Agent] ❌ Error analyzing {symbol_to_act}: {e}")
-                        master_decision, master_confidence = "HOLD", 0.5
+                        # Use dynamic confidence for Master Agent fallback
+                        master_confidence = self.get_dynamic_confidence_for_component(symbol_to_act, 'master_agent', 'HOLD', symbol_data)
+                        master_decision = "HOLD"
                     
                     # Apply Advanced Ensemble Prediction for all symbols
                     ensemble_decision, ensemble_confidence = self.ensemble_manager.predict_ensemble(
@@ -20308,7 +20494,10 @@ class EnhancedTradingBot:
                             except Exception as e:
                                 logger.error(f"[Master Agent] Error analyzing {symbol}: {e}")
                                 print(f"   [Master Agent] Error analyzing {symbol}: {e}")
-                                master_decision, master_confidence = "HOLD", 0.5
+                                # Use dynamic confidence for Master Agent fallback
+                                symbol_data = live_data_cache.get(symbol, pd.DataFrame())
+                                master_confidence = self.get_dynamic_confidence_for_component(symbol, 'master_agent', 'HOLD', symbol_data)
+                                master_decision = "HOLD"
                             
                             signal, confidence, _ = self.get_enhanced_signal(symbol, df_features=df_features)
                             if signal and confidence > ML_CONFIG["MIN_CONFIDENCE_TRADE"] and symbol not in self.open_positions:
