@@ -11101,6 +11101,11 @@ class EnhancedDataManager:
 
     def fetch_multi_timeframe_data(self, symbol, count=None, timeframes_to_use=None):
         """Enhanced data fetching with asset class optimization and caching"""
+        # Check if market is open before fetching data
+        if not is_market_open(symbol):
+            print(f"   [Market Status] Market for {symbol} is closed. Skipping data fetch.")
+            return None
+            
         # Clean old cache entries periodically
         current_time = time.time()
         if current_time - self._last_cache_cleanup > 300:  # Every 5 minutes
@@ -11358,6 +11363,11 @@ class EnhancedDataManager:
     def get_latest_data(self, symbol):
         """L y data mi nh t cho symbol"""
         try:
+            # Check if market is open before fetching data
+            if not is_market_open(symbol):
+                print(f"   [Market Status] Market for {symbol} is closed. Skipping latest data fetch.")
+                return None
+                
             # L y data tprimary timeframe
             primary_tf = get_primary_timeframe(symbol)
             multi_tf_data = self.fetch_multi_timeframe_data(symbol, 100, [primary_tf])
@@ -11371,6 +11381,11 @@ class EnhancedDataManager:
 
     def get_current_price(self, symbol):
         try:
+            # Check if market is open before fetching data
+            if not is_market_open(symbol):
+                print(f"   [Market Status] Market for {symbol} is closed. Skipping current price fetch.")
+                return None
+                
             granularity_map = {
             "M15": "M15",
             "M30": "M30",
@@ -11450,6 +11465,11 @@ class EnhancedDataManager:
             """
             T o features nng cao tmulti-timeframe data.
             """
+            # Check if market is open before fetching data
+            if not is_market_open(symbol):
+                print(f"   [Market Status] Market for {symbol} is closed. Skipping feature creation.")
+                return None
+                
             primary_tf = PRIMARY_TIMEFRAME_BY_SYMBOL.get(symbol, PRIMARY_TIMEFRAME_DEFAULT)
             timeframes_to_use = TIMEFRAME_SET_BY_PRIMARY.get(primary_tf)
 
@@ -11746,6 +11766,11 @@ class EnhancedDataManager:
     # TFunction Function M I this VO in L P EnhancedDataManager
 
     async def fetch_multi_timeframe_data_async(self, session, symbol, count=2500, timeframes_to_use=None):
+        # Check if market is open before fetching data
+        if not is_market_open(symbol):
+            print(f"   [Market Status] Market for {symbol} is closed. Skipping async data fetch.")
+            return None
+            
         all_data = {}
         primary_tf = PRIMARY_TIMEFRAME_BY_SYMBOL.get(symbol, PRIMARY_TIMEFRAME_DEFAULT)
         timeframes_to_use = TIMEFRAME_SET_BY_PRIMARY.get(primary_tf, ["H4", "D1", "W1"])
