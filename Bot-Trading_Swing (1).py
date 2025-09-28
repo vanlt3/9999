@@ -13401,16 +13401,16 @@ class ProductionConfidenceManager:
                 action = data.get('action', 'HOLD')
                 # Dynamic default confidence based on symbol type
                 # Dynamic confidence based on symbol type and market conditions
-            if symbol in ['BTCUSD', 'ETHUSD']:
-                default_confidence = 0.38  # Higher for major crypto
-            elif symbol in ['XAUUSD']:
-                default_confidence = 0.36  # Moderate for gold
-            elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                default_confidence = 0.32  # Lower for volatile indices
-            elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                default_confidence = 0.35  # Standard for major forex
-            else:
-                default_confidence = 0.33  # Other symbols
+                if symbol in ['BTCUSD', 'ETHUSD']:
+                    default_confidence = 0.38  # Higher for major crypto
+                elif symbol in ['XAUUSD']:
+                    default_confidence = 0.36  # Moderate for gold
+                elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
+                    default_confidence = 0.32  # Lower for volatile indices
+                elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
+                    default_confidence = 0.35  # Standard for major forex
+                else:
+                    default_confidence = 0.33  # Other symbols
                 confidence = data.get('confidence', default_confidence)
             elif isinstance(data, tuple) and len(data) >= 2:
                 action, confidence = data[0], data[1]
