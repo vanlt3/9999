@@ -1,0 +1,122 @@
+
+ENTRY_TP_SL_CONFIG = {
+    # === CRYPTOCURRENCIES (24/7 Trading) ===
+    "BTCUSD": {
+        "entry_method": "volatility_breakout",
+        "atr_multiplier_sl": 3.0,
+        "atr_multiplier_tp": 6.0,
+        "min_rr_ratio": 1.6,
+        "max_rr_ratio": 3.5,
+        "support_resistance_weight": 0.25,
+        "volume_confirmation": False,
+        "session_filter": False,
+        "volatility_adjustment": True,
+        
+        # Strategy Selection Parameters - NEWLY ADDED
+        "preferred_strategy": "auto",
+        "trending_threshold": 0.018,
+        "ranging_threshold": 0.025,
+        "confidence_threshold": 0.20,
+        "force_strategy": False,
+        "asset_class": "cryptocurrency",
+        "session": "24/7",
+        "weight": 0.08,
+        "risk_multiplier": 0.9
+    },
+    
+    "ETHUSD": {
+        "entry_method": "momentum_trending",
+        "atr_multiplier_sl": 2.8,
+        "atr_multiplier_tp": 5.5,
+        "min_rr_ratio": 1.6,
+        "max_rr_ratio": 3.5,
+        "support_resistance_weight": 0.25,
+        "volume_confirmation": False,
+        "session_filter": False,
+        "volatility_adjustment": True,
+        
+        # Strategy Selection Parameters - NEWLY ADDED
+        "preferred_strategy": "auto",
+        "trending_threshold": 0.020,
+        "ranging_threshold": 0.025,
+        "confidence_threshold": 0.22,
+        "force_strategy": False,
+        "asset_class": "cryptocurrency",
+        "session": "24/7",
+        "weight": 0.07,
+        "risk_multiplier": 0.9
+    },
+    
+    # === COMMODITIES (Global Trading) ===
+    "XAUUSD": {
+        "entry_method": "fibonacci_confluence",
+        "atr_multiplier_sl": 2.5,
+        "atr_multiplier_tp": 4.0,
+        "min_rr_ratio": 1.6,
+        "max_rr_ratio": 3.5,
+        "support_resistance_weight": 0.4,
+        "volume_confirmation": False,
+        "session_filter": False,
+        "volatility_adjustment": True,
+        "fibonacci_levels": [0.236, 0.382, 0.5, 0.618, 0.786],
+        
+        # Strategy Selection Parameters - NEWLY ADDED
+        "preferred_strategy": "auto",
+        "trending_threshold": 0.020,
+        "ranging_threshold": 0.025,
+        "confidence_threshold": 0.19,
+        "force_strategy": False,
+        "asset_class": "commodity",
+        "session": "23/5",
+        "weight": 0.10,
+        "risk_multiplier": 0.7
+    },
+    
+    # === FOREX MAJOR PAIRS ===
+    "EURUSD": {
+        "entry_method": "trend_following",
+        "atr_multiplier_sl": 1.8,
+        "atr_multiplier_tp": 2.8,
+        "min_rr_ratio": 1.4,
+        "max_rr_ratio": 2.8,
+        "support_resistance_weight": 0.25,
+        "volume_confirmation": True,
+        "session_filter": True,
+        "volatility_adjustment": True,
+        
+        # Strategy Selection Parameters - NEWLY ADDED
+        "preferred_strategy": "auto",
+        "trending_threshold": 0.018,
+        "ranging_threshold": 0.028,
+        "confidence_threshold": 0.18,
+        "force_strategy": False,
+        "asset_class": "forex",
+        "session": "24/5",
+        "weight": 0.08,
+        "risk_multiplier": 0.6
+    },
+    
+    # === EQUITY MAJOR INDICES (US) ===
+    "SPX500": {
+        "entry://method": "momentum_trending",
+        "atr_multiplier_sl": 2.0,
+        "atr_multiplier_tp": 3.5,
+        "min_rr_ratio": 1.4,
+        "max_rr_ratio": 2.8,
+        "support_resistance_weight": 0.25,
+        "volume_confirmation": True,
+        "session_filter": True,
+        "volatility_adjustment": True,
+        
+        # Strategy Selection Parameters - NEWLY ADDED
+        "preferred_strategy": "trending",
+        "trending_threshold": 0.016,
+        "ranging_threshold": 0.025,
+        "confidence_threshold": 0.19,
+        "force_strategy": False,
+        "asset_class": "equity_index",
+        "session": "23/5",
+        "weight": 0.10,
+        "risk_multiplier": 0.7
+    }
+}
