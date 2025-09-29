@@ -5823,16 +5823,15 @@ class OnlineLearningManager:
                 logging.warning(f"[Online Learning] Empty market data for {symbol}, returning HOLD with dynamic confidence")
                 # Dynamic confidence based on symbol type and market conditions
                 if symbol in ['BTCUSD', 'ETHUSD']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.38  # Higher for major crypto
                 elif symbol in ['XAUUSD']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.36  # Moderate for gold
                 elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.32  # Lower for volatile indices
                 elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.35  # Standard for major forex
                 else:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
-                    logging.info(f"[Online Learning] {symbol}: Fallback confidence calculated as {dynamic_confidence:.2%}")
+                    dynamic_confidence = 0.33  # Other symbols
                 return "HOLD", dynamic_confidence
             
             # Extract features - now returns numpy array
@@ -5843,16 +5842,15 @@ class OnlineLearningManager:
                 logging.warning(f"[Online Learning] All-zero features for {symbol}, returning HOLD with dynamic confidence")
                 # Dynamic confidence based on symbol type and market conditions
                 if symbol in ['BTCUSD', 'ETHUSD']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.38  # Higher for major crypto
                 elif symbol in ['XAUUSD']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.36  # Moderate for gold
                 elif symbol in ['SPX500', 'NAS100', 'US30', 'DE40']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.32  # Lower for volatile indices
                 elif symbol in ['EURUSD', 'GBPUSD', 'USDJPY']:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
+                    dynamic_confidence = 0.35  # Standard for major forex
                 else:
-                    dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "online_learning")
-                    logging.info(f"[Online Learning] {symbol}: Fallback confidence calculated as {dynamic_confidence:.2%}")
+                    dynamic_confidence = 0.33  # Other symbols
                 return "HOLD", dynamic_confidence
             
             # Ensure features is properly formatted - features is already numpy array
@@ -14319,9 +14317,8 @@ class TransferLearningManager:
             # Check if market_data is empty or insufficient
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
                 logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
-                # Use dynamic confidence calculation instead of fixed values
-                dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "master_agent")
-                logging.info(f"[Master Agent] {symbol}: Fallback confidence calculated as {dynamic_confidence:.2%}")
+                # Use dynamic confidence for insufficient data
+                dynamic_confidence = 0.25 if symbol in ['BTCUSD', 'ETHUSD'] else 0.2
                 return "HOLD", dynamic_confidence
             
             # Decompose task
@@ -14743,83 +14740,6 @@ class PortfolioOptimizationAgent:
             logging.error(f"PortfolioOptimizationAgent error: {e}")
             return "HOLD", 0.5
 
-
-def _calculate_fallback_confidence(self, symbol, market_data, component_type="master_agent"):
-    """
-    Calculate dynamic fallback confidence based on symbol type and market volatility.
-    
-    Args:
-        symbol: Trading symbol
-        market_data: Market data (can be None or empty for fallback)
-        component_type: Type of component calling this function
-        
-    Returns:
-        float: Dynamic confidence value between 0.15 and 0.40
-    """
-    try:
-        # Base confidence levels by component type
-        base_confidences = {
-            "master_agent": 0.30,
-            "online_learning": 0.35, 
-            "rl_strategy": 0.25
-        }
-        
-        base_confidence = base_confidences.get(component_type, 0.30)
-        
-        # Symbol type adjustments
-        symbol_adjustments = {
-            'BTCUSD': 1.15,    # Crypto major - slightly higher confidence
-            'ETHUSD': 1.10,    # Crypto major - slightly higher confidence  
-            'XAUUSD': 1.05,    # Gold - stable commodity
-            'EURUSD': 1.00,    # Major forex - baseline
-            'GBPUSD': 0.98,    # Volatile forex
-            'USDJPY': 1.00,    # Major forex - baseline
-            'SPX500': 0.95,    # Volatile equity index
-            'NAS100': 0.92,    # Tech-heavy volatile index
-            'US30': 0.96,      # Traditional index
-            'DE40': 0.94       # European index
-        }
-        
-        symbol_multiplier = symbol_adjustments.get(symbol, 1.00)
-        
-        # Volatility adjustment based on market data
-        volatility_adjustment = 1.0
-        
-        if market_data is not None and not market_data.empty and len(market_data) > 0:
-            try:
-                # Try to get volatility indicators from last available data
-                last_row = market_data.iloc[-1]
-                
-                # Check for ATR normalized if available
-                if 'atr_normalized' in market_data.columns:
-                    atr_value = last_row.get('atr_normalized', 0.01)
-                    if atr_value > 0.015:  # High volatility
-                        volatility_adjustment *= 0.70  # Reduce confidence significantly
-                        logging.debug(f"[Fallback] {symbol}: High volatility detected (ATR: {atr_value:.4f}), reducing confidence by 30%")
-                    elif atr_value < 0.005:  # Low volatility
-                        volatility_adjustment *= 1.10  # Increase confidence slightly  
-                        logging.debug(f"[Fallback] {symbol}: Low volatility detected (ATR: {atr_value:.4f}), increasing confidence by 10%")
-                        
-            except Exception as e:
-                logging.debug(f"[Fallback] {symbol}: Error analyzing volatility for fallback confidence: {e}")
-                # Continue with default confidence if volatility analysis fails
-        
-        # Calculate final confidence
-        final_confidence = base_confidence * symbol_multiplier * volatility_adjustment
-        
-        # Ensure confidence stays within reasonable bounds (15% to 40%)
-        final_confidence = max(0.15, min(0.40, final_confidence))
-        
-        logging.debug(f"[Fallback Confidence] {symbol} ({component_type}): base={base_confidence:.2%}, symbol_mult={symbol_multiplier:.2f}, volatility_mult={volatility_adjustment:.2f}, final={final_confidence:.2%}")
-        
-        return final_confidence
-        
-    except Exception as e:
-        logging.error(f"[Fallback Confidence] Error calculating confidence for {symbol}: {e}")
-        # Safe fallback to reasonable default
-        return 0.20
-
-
 # === MASTER AGENT FOR TP/SL DECISIONS ===
 class MasterAgent:
     """
@@ -14875,9 +14795,8 @@ class MasterAgent:
             # Check if market_data is empty or insufficient
             if market_data is None or (hasattr(market_data, 'empty') and market_data.empty) or len(market_data) < 10:
                 logging.warning(f"[Master Agent Coordinator] Insufficient data for {symbol}: {len(market_data) if market_data is not None else 0} rows")
-                # Use dynamic confidence calculation instead of fixed values
-                dynamic_confidence = self._calculate_fallback_confidence(symbol, market_data, "master_agent")
-                logging.info(f"[Master Agent] {symbol}: Fallback confidence calculated as {dynamic_confidence:.2%}")
+                # Use dynamic confidence for insufficient data
+                dynamic_confidence = 0.25 if symbol in ['BTCUSD', 'ETHUSD'] else 0.2
                 return "HOLD", dynamic_confidence
             
             # Decompose task
@@ -19202,10 +19121,8 @@ class EnhancedTradingBot:
             print(f"🔄 Starting forced retraining cycle for: {force_retrain_symbols}")
             self.data_manager.clear_cache()
 
-        # Create temporary list to track successfully processed symbols
-        successfully_processed_symbols = 🎯
+        self.active_symbols.clear()
         print("Starting to build/update active symbol list...")
-        print(f"[Symbol Debug] Initial active_symbols state: {len(self.active_symbols)} symbols")
         full_data_cache = {}
 
         def _check_quality_gates(model_data, symbol, model_type):
@@ -19377,9 +19294,8 @@ class EnhancedTradingBot:
             
             if is_symbol_active or (is_crypto_symbol(symbol) and is_market_open(symbol)):
                 try:
-                    # Track successful processing
-                    successfully_processed_symbols.add(symbol)
-                    print(f"  ✅ Symbol {symbol} has been processed successfully! Tracked count: {len(successfully_processed_symbols)}")
+                    self.active_symbols.add(symbol)
+                    print(f"  ✅ Symbol {symbol} has been activated! Active symbols count: {len(self.active_symbols)}")
                     if is_symbol_active:
                         print(f"  ✅ Symbol {symbol} has been activated (with models).")
                     else:
@@ -19408,17 +19324,28 @@ class EnhancedTradingBot:
 
 
 
-        # --- Assign cleaned active_symbols list ---
-        print(f"
-📝 [Symbol Management] Assigning final active_symbols list...")
-        print(f"   [Symbol Debug] Successfully processed symbols: {len(successfully_processed_symbols)} symbols")
-        print(f"   [Symbol Debug] Successfully processed list: {list(successfully_processed_symbols)}")
-        
-        # Clear existing and assign the properly tracked list
-        self.active_symbols.clear()
-        self.active_symbols.update(successfully_processed_symbols)
-        
-        print(f"   [Symbol Debug] Final active_symbols after assignment: {len(self.active_symbols)} symbols")
+        # --- CRYPTO BACKUP ACTIVATION ---
+        print(f"\n🔧 [CRYPTO BACKUP] Ensuring crypto symbols are activated...")
+        crypto_symbols_to_check = ['BTCUSD', 'ETHUSD']
+        for crypto_symbol in crypto_symbols_to_check:
+            if crypto_symbol not in self.active_symbols and is_crypto_symbol(crypto_symbol):
+                print(f"   🚨 [CRYPTO BACKUP] {crypto_symbol} missing from active symbols - force adding")
+                self.active_symbols.add(crypto_symbol)
+                
+                # Try to load models if not already loaded
+                if crypto_symbol not in self.trending_models:
+                    model_trending = load_latest_model(crypto_symbol, "ensemble_trending")
+                    if model_trending:
+                        self.trending_models[crypto_symbol] = model_trending
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded TRENDING model for {crypto_symbol}")
+                
+                if crypto_symbol not in self.ranging_models:
+                    model_ranging = load_latest_model(crypto_symbol, "ensemble_ranging")
+                    if model_ranging:
+                        self.ranging_models[crypto_symbol] = model_ranging
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded RANGING model for {crypto_symbol}")
+            else:
+                print(f"   ✅ [CRYPTO BACKUP] {crypto_symbol} already active")
 
         # --- DEBUG: Final active symbols summary ---
         print(f"\n🎯 [FINAL SUMMARY] Symbol Processing Complete:")
@@ -20357,14 +20284,7 @@ class EnhancedTradingBot:
                         
                         # Use production confidence manager for threshold
                         adaptive_threshold = self.production_confidence_manager.get_optimal_threshold(symbol_to_act, action_name)
-                        adjusted_confidence = confidence
-                        
-                        # Track confidence source for debugging
-                        symbol_data = live_data_cache.get(symbol_to_act, pd.DataFrame())
-                        if symbol_data.empty or len(symbol_data) < 10:
-                            confidence_source = "Fallback due to insufficient data"
-                        else:
-                            confidence_source = "Normal calculation"
+                        adjusted_confidence = confidence * confidence_multiplier
                         
                         # Apply Transfer Learning
                         source_symbols = [s for s in self.active_symbols if s != symbol_to_act]
@@ -20423,13 +20343,6 @@ class EnhancedTradingBot:
                         # For HOLD actions, check if we can convert to BUY/SELL based on other signals
                         action_name = "HOLD"
                         adjusted_confidence = confidence
-                        
-                        # Track confidence source for debugging
-                        symbol_data = live_data_cache.get(symbol_to_act, pd.DataFrame())
-                        if symbol_data.empty or len(symbol_data) < 10:
-                            confidence_source = "Fallback due to insufficient data"
-                        else:
-                            confidence_source = "Normal calculation"
                         adaptive_threshold = self.production_confidence_manager.get_optimal_threshold(symbol_to_act, action_name)
                         
                         # Combine decisions with enhanced weighting for HOLD actions
