@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "created": "2025-09-29 06:40:29",
+    "description": "Strategy Configuration for Trading Bot"
+  },
+  "symbol_specific": {
+    "BTCUSD": {
+      "preferred_strategy": "auto",
+      "entry_method": "volatility_breakout",
+      "trending_threshold": 0.015,
+      "ranging_threshold": 0.025,
+      "atr_multiplier_sl": 3.0,
+      "atr_multiplier_tp": 6.0,
+      "confidence_threshold": 0.2,
+      "force_strategy": false,
+      "explanation": "Bitcoin - Volatility breakout strategy với auto selection"
+    },
+    "ETHUSD": {
+      "preferred_strategy": "trending",
+      "entry_method": "momentum_trending",
+      "trending_threshold": 0.02,
+      "ranging_threshold": 0.03,
+      "atr_multiplier_sl": 2.8,
+      "atr_multiplier_tp": 5.5,
+      "confidence_threshold": 0.22,
+      "force_strategy": false,
+      "explanation": "Ethereum - Momentum trending với ưu tiên trending"
+    },
+    "EURUSD": {
+      "preferred_strategy": "auto",
+      "entry_method": "trend_following",
+      "trending_threshold": 0.018,
+      "ranging_threshold": 0.028,
+      "atr_multiplier_sl": 1.8,
+      "atr_multiplier_tp": 2.8,
+      "confidence_threshold": 0.18,
+      "force_strategy": false,
+      "explanation": "EUR/USD - Trend following với auto selection"
+    },
+    "GBPUSD": {
+      "preferred_strategy": "ranging",
+      "entry_method": "support_resistance",
+      "trending_threshold": 0.025,
+      "ranging_threshold": 0.015,
+      "atr_multiplier_sl": 2.0,
+      "atr_multiplier_tp": 3.0,
+      "confidence_threshold": 0.2,
+      "force_strategy": false,
+      "explanation": "GBP/USD - Support resistance với ưu tiên ranging"
+    },
+    "XAUUSD": {
+      "preferred_strategy": "auto",
+      "entry_method": "fibonacci_confluence",
+      "trending_threshold": 0.02,
+      "ranging_threshold": 0.025,
+      "atr_multiplier_sl": 2.5,
+      "atr_multiplier_tp": 4.0,
+      "confidence_threshold": 0.19,
+      "force_strategy": false,
+      "explanation": "Gold - Fibonacci confluence với auto selection"
+    },
+    "USOIL": {
+      "preferred_strategy": "trending",
+      "entry_method": "momentum_trending",
+      "trending_threshold": 0.018,
+      "ranging_threshold": 0.03,
+      "atr_multiplier_sl": 2.2,
+      "atr_multiplier_tp": 4.5,
+      "confidence_threshold": 0.21,
+      "force_strategy": false,
+      "explanation": "Oil - Momentum trending với ưu tiên trending"
+    },
+    "SPX500": {
+      "preferred_strategy": "trending",
+      "entry_method": "momentum_trending",
+      "trending_threshold": 0.016,
+      "ranging_threshold": 0.025,
+      "atr_multiplier_sl": 2.2,
+      "atr_multiplier_tp": 3.5,
+      "confidence_threshold": 0.2,
+      "force_strategy": false,
+      "explanation": "S&P 500 - Momentum trending với ưu tiên trending"
+    },
+    "NAS100": {
+      "preferred_strategy": "trending",
+      "entry_method": "momentum_trending",
+      "trending_threshold": 0.017,
+      "ranging_threshold": 0.025,
+      "atr_multiplier_sl": 2.2,
+      "atr_multiplier_tp": 3.5,
+      "confidence_threshold": 0.2,
+      "force_strategy": false,
+      "explanation": "Nasdaq - Momentum trending với ưu tiên trending"
+    }
+  },
+  "global_mode": {
+    "ENABLE_DYNAMIC_STRATEGY_SELECTION": true,
+    "GLOBAL_TREND_PREFERENCE": "auto",
+    "MIN_TREND_CONFIDENCE": 0.15,
+    "MIN_TREND_STRENGTH": 0.01,
+    "MAX_VOLATILITY_TREND": 2.5,
+    "STRATEGY_CONSISTENCY_CHECK": true,
+    "PERFORMANCE_BASED_SELECTION": true,
+    "VOLATILITY_ADJUSTMENT_FACTOR": 1.2,
+    "VOLUME_CONFIRMATION_REQUIRED": true,
+    "MULTI_TIMEFRAME_ANALYSIS": true,
+    "REGIME_DETECTION_WINDOW": 50,
+    "ADAPTIVE_THRESHOLDS": true,
+    "CONTEXT_EXPLAINED_MODE": true,
+    "LOGGING_STRATEGY_DECISIONS": true,
+    "STRATEGY_ID_MAP": {
+      "trending": [
+        "momentum_trending",
+        "trend_following",
+        "volatility_breakout"
+      ],
+      "ranging": [
+        "range_bound",
+        "support_resistance",
+        "fibonacci_confluence",
+        "mean_reversion"
+      ]
+    },
+    "STRATEGY_WEIGHT_MULTIPLIERS": {
+      "trending": {
+        "trend_strength_weight": 0.35,
+        "volatility_weight": 0.25,
+        "volume_weight": 0.2,
+        "momentum_weight": 0.2
+      },
+      "ranging": {
+        "range_size_weight": 0.3,
+        "support_resistance_weight": 0.25,
+        "volatility_weight": 0.25,
+        "fibonacci_weight": 0.2
+      }
+    },
+    "MODEL_RETRAIN_THRESHOLDS": {
+      "trending_model_min_samples": 1000,
+      "ranging_model_min_samples": 800,
+      "performance_degradation_threshold": 0.15,
+      "retrain_frequency_hours": 24
+    }
+  },
+  "strategy_rules": {
+    "STRATEGY_RULES": {
+      "FORCE_TRENDING_CONDITIONS": [
+        "trend_strength >= trending_threshold",
+        "volatility < max_volatility_trend",
+        "volume_confirmation == True",
+        "momentum_aligned == True",
+        "sma_alignment_bullish OR sma_alignment_bearish",
+        "confidence >= min_confidence"
+      ],
+      "FORCE_RANGING_CONDITIONS": [
+        "trend_strength < ranging_threshold",
+        "range_size_normalized < 0.015",
+        "sideways_price_action == True",
+        "support_resistance_active == True",
+        "volatility_stable < 2.0",
+        "fibonacci_levels_tested == True"
+      ],
+      "HYBRID_CONDITIONS": [
+        "trend_strength BETWEEN trending_threshold AND ranging_threshold",
+        "high_volatility > 3.0",
+        "mixed_signals == True",
+        "uncertainty_period == True"
+      ]
+    },
+    "DECISION_PRIORITY": [
+      "1. Force strategy from symbol config",
+      "2. Global mode override",
+      "3. Market regime detection",
+      "4. Technical analysis confluence",
+      "5. Volume confirmation",
+      "6. Volatility analysis",
+      "7. Timeframe alignment",
+      "8. Default ranging strategy"
+    ],
+    "MINIMUM_REQUIREMENTS": {
+      "min_data_points": 100,
+      "min_signals_count": 3,
+      "min_confidence_correlation": 0.15,
+      "max_opinion_divergence": 0.4,
+      "backup_strategy_timeout": 30
+    }
+  },
+  "interpretation_guide": {
+    "SỬ DỤNG FILE NÀY": "\n            File này cho phép bạn điều chỉnh cách Bot quyết định chọn strategy mà KHÔNG CẦN chỉnh sửa file bot chính.\n            \n            CÁCH SỬ DỤNG:\n            1. Chỉnh các giá trị trong get_symbol_specific_config()\n            2. Adjust global mode trong get_global_mode_config()\n            3. Import và áp dụng vào bot chính\n            4. Bot sẽ tự động cập nhật theo config mới\n            ",
+    "Ý NGHĨA CÁC THAM SỐ": {
+      "preferred_strategy": "\n                - \"auto\": Bot tự chọn based on market conditions\n                - \"trending\": Force chọn trending strategy  \n                - \"ranging\": Force chọn ranging strategy\n                ",
+      "entry_method": "\n                Trending-friendly: momentum_trending, trend_following, volatility_breakout\n                Ranging-friendly: range_bound, support_resistance, fibonacci_confluence\n                ",
+      "trending_threshold": "\n                Nhỏ = Dễ trigger trending (Bot sẽ chọn trending nhiều hơn)\n                Lớn = Khó trigger trending (Bot sẽ chọn ranging nhiều hơn)\n                ",
+      "ranging_threshold": "\n                Nhỏ = Dễ trigger ranging (Bot sẽ chọn ranging nhiều hơn)\n                Lớn = Khó trigger ranging (Bot sẽ chọn trending nhiều hơn)  \n                ",
+      "confidence_threshold": "\n                Nhỏ = Bot sẽ trade với confidence thấp hơn (nhiều cơ hội hơn)\n                Lớn = Bot sẽ trade với confidence cao hơn (ít cơ hội hơn)\n                ",
+      "force_strategy": "\n                True = Always chọn strategy được chỉ định, ignore market conditions\n                False = Cho phép dynamic selection based on market analysis\n                "
+    },
+    "PHONG CÁCH TRADING": {
+      "TRENDING BIASED": "\n                Để Bot tập trung vào trending:\n                1. Set preferred_strategy = \"trending\" cho main symbols\n                2. Giảm trending_threshold xuống 0.01-0.015\n                3. Tăng ranging_threshold lên 0.03-0.035\n                4. Set entry_method = \"momentum_trending\"\n                5. Set GLOBAL_TREND_PREFERENCE = \"trending\"\n                ",
+      "RANGING BIASED": "\n                Để Bot tập trung vào ranging:\n                1. Set preferred_strategy = \"ranging\" cho main symbols  \n                2. Tăng trending_threshold lên 0.025-0.03\n                3. Giảm ranging_threshold xuống 0.01-0.015\n                4. Set entry_method = \"fibonacci_confluence\"\n                5. Set GLOBAL_TREND_PREFERENCE = \"ranging\"\n                ",
+      "BALANCED": "\n                Để Bot cân bằng và adaptive:\n                1. Set preferred_strategy = \"auto\" cho hầu hết symbols\n                2. Maintain thresholds ở khoảng 0.02 +/- 0.005\n                3. Enable PERFORMANCE_BASED_SELECTION = True\n                4. Set GLOBAL_TREND_PREFERENCE = \"auto\"\n                "
+    }
+  }
+}
