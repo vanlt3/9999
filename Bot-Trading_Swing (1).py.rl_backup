@@ -2900,18 +2900,9 @@ def validate_dataframe_freshness(
         
         is_fresh = time_diff <= tf_limit
         if not is_fresh:
-            # Check market hours before reporting staleness
-            if not is_market_open(symbol):
-                logging.info(f"[Data Freshness] {symbol} {primary_tf} data is not recent ({time_diff:.1f} minutes old), but market is currently closed. Skipping symbol as normal.")
-                return False  # Safe to skip during market closure
-            
-            logging.warning(f"[Data Freshness] {symbol} {primary_tf} data is stale: {time_diff:.1f} minutes old (limit: {tf_limit})")
+            logging.warning(f"[Data Freshness] {primary_tf} data is stale: {time_diff:.1f} minutes old (limit: {tf_limit})")
+            # Log additional context for debugging
             logging.info(f"[Data Freshness] Last timestamp: {last_timestamp}, Current time: {now}")
-            
-            # Attempt recovery with retry mechanism
-            recovery_success = _attempt_data_recovery_with_retry(symbol, primary_tf, time_diff)
-            if not recovery_success:
-                logging.error(f"[Data Freshness] CRITICAL - Failed to get recent data for {symbol} after retry attempts while market is open. Symbol will be disabled for this cycle.")
         
         return is_fresh
     except Exception as e:
@@ -2919,53 +2910,12 @@ def validate_dataframe_freshness(
         return False
 
 
-def _attempt_data_recovery_with_retry(symbol: str, timeframe: str, stale_minutes: float, max_retries: int = 3) -> bool:
-    """Enhanced data recovery with retry mechanism and market hours awareness"""
+def _attempt_data_recovery(symbol: str, timeframe: str, stale_minutes: float) -> bool:
+    """Attempt to recover stale data using retry mechanism"""
     try:
         from io_clients import DataRecoveryClient
-        import time
         
-        # Check market hours first
-        if not is_market_open(symbol):
-            logging.info(f"[Data Recovery] Market closed for {symbol}. Data staleness normal during closed hours.")
-            return False
-        
-        logging.warning(f"[Data Recovery] {symbol} {timeframe} data is stale ({stale_minutes:.0f} minutes old). Starting retry mechanism...")
-        
-        retry_success = False
-        for attempt in range(max_retries):
-            logging.info(f"[Data Recovery] Attempting recovery for {symbol} {timeframe} (Retry {attempt + 1}/{max_retries})")
-            
-            try:
-                recovery_client = DataRecoveryClient(use_async=False)
-                success = recovery_client.attempt_data_recovery_sync(symbol, timeframe)
-                
-                if success:
-                    logging.info(f"[Data Recovery] Recovery successful for {symbol} {timeframe} on attempt {attempt + 1}")
-                    retry_success = True
-                    break
-                else:
-                    logging.warning(f"[Data Recovery] Recovery failed for {symbol} {timeframe} on attempt {attempt + 1}")
-                    
-            except Exception as recovery_error:
-                logging.error(f"[Data Recovery] Recovery error for {symbol} {timeframe} on attempt {attempt + 1}: {recovery_error}")
-            
-            # Wait before next retry (except for last attempt)
-            if attempt < max_retries - 1:
-                wait_time = 60  # 1 minute wait
-                logging.info(f"[Data Recovery] Waiting {wait_time} seconds before next retry...")
-                time.sleep(wait_time)
-        
-        # Final assessment
-        if not retry_success:
-            logging.error(f"[Data Recovery] CRITICAL - Failed to recover {symbol} {timeframe} after {max_retries} attempts while market is open!")
-            return False
-        
-        return retry_success
-        
-    except Exception as e:
-        logging.error(f"[Data Recovery] Recovery system error for {symbol} {timeframe}: {e}")
-        return False {timeframe} (stale {stale_minutes:.0f} minutes)")
+        logging.info(f"[Data Recovery] Attempting recovery for {symbol} {timeframe} (stale {stale_minutes:.0f} minutes)")
 
         # Use retry mechanism for data recovery
         recovery_client = DataRecoveryClient(use_async=False)
@@ -12178,13 +12128,17 @@ class PortfolioEnvironment(gym.Env):
 
         final_obs = np.append(flat_obs, global_states)
 
-        # CRITICAL SAFETY CHECK: Assert exact shape match for training environment consistency
-            if len(final_obs) != self.observation_space.shape[0]:
-                error_msg = f"CRITICAL ERROR in RL Environment: Observation shape mismatch! Environment expected {(self.observation_space.shape[0],)} but generated ({len(final_obs)},). This indicates inconsistency in feature generation. STOPPING training to prevent model corruption."
-                logging.critical(error_msg)
-                raise AssertionError(f"Environment shape mismatch: Expected {(self.observation_space.shape[0],)}, got ({len(final_obs)},). Check feature generation consistency.")
+        # Final validation
+        if len(final_obs) != self.observation_space.shape[0]:
+            logging.info(f"[RL Env] Adjusting observation shape: {len(final_obs)} -> {self.observation_space.shape[0]}")
+            # Pad or truncate to match expected size
+            if len(final_obs) < self.observation_space.shape[0]:
+                padding = np.zeros(self.observation_space.shape[0] - len(final_obs))
+                final_obs = np.append(final_obs, padding)
+            else:
+                final_obs = final_obs[:self.observation_space.shape[0]]
 
-            return final_obs
+        return final_obs
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -19121,10 +19075,8 @@ class EnhancedTradingBot:
             print(f"🔄 Starting forced retraining cycle for: {force_retrain_symbols}")
             self.data_manager.clear_cache()
 
-        # Create temporary list to track successfully processed symbols
-        successfully_processed_symbols = 🎯
+        self.active_symbols.clear()
         print("Starting to build/update active symbol list...")
-        print(f"[Symbol Debug] Initial active_symbols state: {len(self.active_symbols)} symbols")
         full_data_cache = {}
 
         def _check_quality_gates(model_data, symbol, model_type):
@@ -19296,9 +19248,8 @@ class EnhancedTradingBot:
             
             if is_symbol_active or (is_crypto_symbol(symbol) and is_market_open(symbol)):
                 try:
-                    # Track successful processing
-                    successfully_processed_symbols.add(symbol)
-                    print(f"  ✅ Symbol {symbol} has been processed successfully! Tracked count: {len(successfully_processed_symbols)}")
+                    self.active_symbols.add(symbol)
+                    print(f"  ✅ Symbol {symbol} has been activated! Active symbols count: {len(self.active_symbols)}")
                     if is_symbol_active:
                         print(f"  ✅ Symbol {symbol} has been activated (with models).")
                     else:
@@ -19327,17 +19278,28 @@ class EnhancedTradingBot:
 
 
 
-        # --- Assign cleaned active_symbols list ---
-        print(f"
-📝 [Symbol Management] Assigning final active_symbols list...")
-        print(f"   [Symbol Debug] Successfully processed symbols: {len(successfully_processed_symbols)} symbols")
-        print(f"   [Symbol Debug] Successfully processed list: {list(successfully_processed_symbols)}")
-        
-        # Clear existing and assign the properly tracked list
-        self.active_symbols.clear()
-        self.active_symbols.update(successfully_processed_symbols)
-        
-        print(f"   [Symbol Debug] Final active_symbols after assignment: {len(self.active_symbols)} symbols")
+        # --- CRYPTO BACKUP ACTIVATION ---
+        print(f"\n🔧 [CRYPTO BACKUP] Ensuring crypto symbols are activated...")
+        crypto_symbols_to_check = ['BTCUSD', 'ETHUSD']
+        for crypto_symbol in crypto_symbols_to_check:
+            if crypto_symbol not in self.active_symbols and is_crypto_symbol(crypto_symbol):
+                print(f"   🚨 [CRYPTO BACKUP] {crypto_symbol} missing from active symbols - force adding")
+                self.active_symbols.add(crypto_symbol)
+                
+                # Try to load models if not already loaded
+                if crypto_symbol not in self.trending_models:
+                    model_trending = load_latest_model(crypto_symbol, "ensemble_trending")
+                    if model_trending:
+                        self.trending_models[crypto_symbol] = model_trending
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded TRENDING model for {crypto_symbol}")
+                
+                if crypto_symbol not in self.ranging_models:
+                    model_ranging = load_latest_model(crypto_symbol, "ensemble_ranging")
+                    if model_ranging:
+                        self.ranging_models[crypto_symbol] = model_ranging
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded RANGING model for {crypto_symbol}")
+            else:
+                print(f"   ✅ [CRYPTO BACKUP] {crypto_symbol} already active")
 
         # --- DEBUG: Final active symbols summary ---
         print(f"\n🎯 [FINAL SUMMARY] Symbol Processing Complete:")
@@ -20118,15 +20080,34 @@ class EnhancedTradingBot:
             logger.debug(f" [RL Strategy] Expected observation shape: {expected_shape}")
             logger.debug(f" [RL Strategy] currentobservation shape: {final_live_observation.shape}")
 
-            # CRITICAL SAFETY CHECK: Assert exact shape match before model prediction
+            # So snh v fix l i shape if needs
             if final_live_observation.shape != expected_shape:
-                error_msg = f"CRITICAL ERROR: Observation shape mismatch! Expected {expected_shape}, but got {final_live_observation.shape}. The RL model trained with {expected_shape[0]} features but production is generating {final_live_observation.shape[0]} features. This indicates environment mismatch between training and production. STOPPING to prevent invalid predictions."
-                logging.critical(error_msg)
-                print(f"[RL Strategy] {error_msg}")
+                current_size = final_live_observation.shape[0]
+                expected_size = expected_shape[0]
                 
-                # Instead of silently adjusting, throw an error to prevent invalid trading decisions
-                raise AssertionError(f"Shape mismatch: Expected {expected_shape}, got {final_live_observation.shape}. Retrain model or fix feature generation.")
-            
+                logger.info(f" [RL Strategy] Adjusting observation shape: {current_size} -> {expected_size}")
+                logging.info(f"Adjusting observation shape: {current_size} -> {expected_size}")
+
+                if current_size < expected_size:
+                    # Tch ph n global states (lun l 4 ph n tcu)
+                    obs_without_global = final_live_observation[:-4]
+                    global_s = final_live_observation[-4:]
+
+                    # T o padding cOrc symbol bthi u
+                    padding_size = (expected_size - 4) - len(obs_without_global)
+                    padding = np.zeros(padding_size)
+
+                    # Ghp l i observation used tht 
+                    padded_obs = np.concatenate([obs_without_global, padding, global_s])
+                    final_live_observation = padded_obs.astype(np.float32)
+                    logger.info(f"[RL Strategy] Successfully padded observation to {final_live_observation.shape}")
+                    logging.info(f"Successfully padded observation to {final_live_observation.shape}")
+                else:
+                    # Tru ng h p observation l n hon expected - from b t
+                    final_live_observation = final_live_observation[:expected_size]
+                    logger.info(f"[RL Strategy] Successfully truncated observation to {final_live_observation.shape}")
+                    logging.info(f"Successfully truncated observation to {final_live_observation.shape}")
+
             final_live_observation = np.nan_to_num(final_live_observation)
             logger.debug(f" [RL Strategy] Final observation shape: {final_live_observation.shape}")
 

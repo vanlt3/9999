@@ -19121,10 +19121,8 @@ class EnhancedTradingBot:
             print(f"🔄 Starting forced retraining cycle for: {force_retrain_symbols}")
             self.data_manager.clear_cache()
 
-        # Create temporary list to track successfully processed symbols
-        successfully_processed_symbols = 🎯
+        self.active_symbols.clear()
         print("Starting to build/update active symbol list...")
-        print(f"[Symbol Debug] Initial active_symbols state: {len(self.active_symbols)} symbols")
         full_data_cache = {}
 
         def _check_quality_gates(model_data, symbol, model_type):
@@ -19296,9 +19294,8 @@ class EnhancedTradingBot:
             
             if is_symbol_active or (is_crypto_symbol(symbol) and is_market_open(symbol)):
                 try:
-                    # Track successful processing
-                    successfully_processed_symbols.add(symbol)
-                    print(f"  ✅ Symbol {symbol} has been processed successfully! Tracked count: {len(successfully_processed_symbols)}")
+                    self.active_symbols.add(symbol)
+                    print(f"  ✅ Symbol {symbol} has been activated! Active symbols count: {len(self.active_symbols)}")
                     if is_symbol_active:
                         print(f"  ✅ Symbol {symbol} has been activated (with models).")
                     else:
@@ -19327,17 +19324,28 @@ class EnhancedTradingBot:
 
 
 
-        # --- Assign cleaned active_symbols list ---
-        print(f"
-📝 [Symbol Management] Assigning final active_symbols list...")
-        print(f"   [Symbol Debug] Successfully processed symbols: {len(successfully_processed_symbols)} symbols")
-        print(f"   [Symbol Debug] Successfully processed list: {list(successfully_processed_symbols)}")
-        
-        # Clear existing and assign the properly tracked list
-        self.active_symbols.clear()
-        self.active_symbols.update(successfully_processed_symbols)
-        
-        print(f"   [Symbol Debug] Final active_symbols after assignment: {len(self.active_symbols)} symbols")
+        # --- CRYPTO BACKUP ACTIVATION ---
+        print(f"\n🔧 [CRYPTO BACKUP] Ensuring crypto symbols are activated...")
+        crypto_symbols_to_check = ['BTCUSD', 'ETHUSD']
+        for crypto_symbol in crypto_symbols_to_check:
+            if crypto_symbol not in self.active_symbols and is_crypto_symbol(crypto_symbol):
+                print(f"   🚨 [CRYPTO BACKUP] {crypto_symbol} missing from active symbols - force adding")
+                self.active_symbols.add(crypto_symbol)
+                
+                # Try to load models if not already loaded
+                if crypto_symbol not in self.trending_models:
+                    model_trending = load_latest_model(crypto_symbol, "ensemble_trending")
+                    if model_trending:
+                        self.trending_models[crypto_symbol] = model_trending
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded TRENDING model for {crypto_symbol}")
+                
+                if crypto_symbol not in self.ranging_models:
+                    model_ranging = load_latest_model(crypto_symbol, "ensemble_ranging")
+                    if model_ranging:
+                        self.ranging_models[crypto_symbol] = model_ranging
+                        print(f"   🔧 [CRYPTO BACKUP] Loaded RANGING model for {crypto_symbol}")
+            else:
+                print(f"   ✅ [CRYPTO BACKUP] {crypto_symbol} already active")
 
         # --- DEBUG: Final active symbols summary ---
         print(f"\n🎯 [FINAL SUMMARY] Symbol Processing Complete:")
