@@ -2965,7 +2965,7 @@ def _attempt_data_recovery_with_retry(symbol: str, timeframe: str, stale_minutes
         
     except Exception as e:
         logging.error(f"[Data Recovery] Recovery system error for {symbol} {timeframe}: {e}")
-        return False {timeframe} (stale {stale_minutes:.0f} minutes)")
+        return False
 
         # Use retry mechanism for data recovery
         recovery_client = DataRecoveryClient(use_async=False)
