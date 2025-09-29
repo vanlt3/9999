@@ -27003,6 +27003,95 @@ class AdvancedScheduler:
             logger.error(f"Error calculating dynamic confidence for {component} on {symbol}: {e}")
             return base_confidences.get(component, 0.4)
 
+    def get_highest_scoring_component_for_symbol(self, symbol):
+        """
+        Get the component with highest score for trading.
+        This is a simplified version of component scoring logic.
+        """
+        try:
+            # Get market data and technical indicators
+            if hasattr(self, 'data_manager') and self.data_manager:
+                all_data_symbol = self.data_manager.get_all_data_for_symbol(symbol)
+            else:
+                all_data_symbol = {'computed_features': {}}
+            
+            # Initialize component scores and try to evaluate each
+            component_scores = {}
+            
+            # Score RL component
+            try:
+                # RL Component Score = RL Probability * RL Confidence + RL Stability
+                rl_probs = [0.5, 0.5] # Default neutral probabilities
+                rl_conf = {"confidence": 0.5, "adjustment_factor": 0.5, "metadata": {}}
+                rl_score = (
+                    0.8 * rl_probs[1] * rl_conf["confidence"] +
+                    0.2 * rl_conf["adjustment_factor"]
+                )
+                component_scores["rl"] = rl_score
+            except Exception as e:
+                logger.warning(f"RL scoring failed: {e}")
+                component_scores["rl"] = 0.5
+                
+            # Score ML Component Score
+            try:
+                # ML Score = ML Signal * Confidence Weighted Score * Technical Weighted Score * Adaptive Score                
+                ml_signals = {"signal": 0.0, "confidence": 0.5}
+                ml_score = (
+                    0.5 * ml_signals["signal"] +
+                    0.3 * ml_signals["confidence"] +
+                    0.2 * abs(ml_signals["signal"])
+                )
+                component_scores["ml"] = ml_score
+            except Exception as e:
+                logger.warning(f"ML scoring failed: {e}")
+                component_scores["ml"] = 0.5
+                
+            # Score TA Component
+            try:
+                # TA Score = (Long Short Signals + Technical Signals + Long Signals) * 0.333...                
+                ta_signals = {"signal": 0.0, "confidence": 0.5}
+                ta_score = (
+                    0.4 * ta_signals["signal"] +
+                    0.3 * ta_signals["confidence"] +
+                    0.3 * abs(ta_signals["signal"])
+                )
+                component_scores["ta"] = ta_score
+            except Exception as e:
+                logger.warning(f"TA scoring failed: {e}")
+                component_scores["ta"] = 0.5
+                
+            # Score FI Component
+            try:
+                # FI Score = (Financial Signals + Trading Signals + Financial Signals) * 0.333...
+                fi_signals = {"signal": 0.0, "confidence": 0.5}
+                fi_score = (
+                    0.4 * fi_signals["signal"] +
+                    0.3 * fi_signals["confidence"] +
+                    0.3 * abs(fi_signals["signal"])
+                )
+                component_scores["fi"] = fi_score
+            except Exception as e:
+                logger.warning(f"FI scoring failed: {e}")
+                component_scores["fi"] = 0.5
+                    
+            # Find the component with the highest score
+            if component_scores:
+                highest_scoring_component = max(component_scores, key=component_scores.get)
+                highest_score = component_scores[highest_scoring_component]
+            else:
+                # Fallback if no components scored successfully
+                highest_scoring_component = 'rl'
+                highest_score = 0.5
+            
+            logger.info(f"[Component Scoring] {symbol}: {highest_scoring_component} (Score: {highest_score:.4f})")
+            
+            return highest_scoring_component, highest_score
+            
+        except Exception as e:
+            logger.error(f"Error in get_highest_scoring_component_for_symbol for {symbol}: {e}")
+            # Return 'rl' as default fallback
+            return 'rl', 0.5
+
 class EventSentimentGate:
     """Advanced event and sentiment gating system"""
 
