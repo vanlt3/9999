@@ -24297,7 +24297,7 @@ Chỉ trả về duy nhất một khối JSON với định dạng sau:
         if wait_seconds <= 0:
             wait_seconds += 3600
 
-        print(f"Đang chờ. Còn {int(wait_seconds // 60)} phút {int(wait_seconds % 60)} giây cho đến {next_hier.strftime('%H:%M:%S')}...")
+        print(f"Đang chờ. Còn {int(wait_seconds // 60)} phút {int(wait_seconds % 60)} giây cho đến {next_hour.strftime('%H:%M:%S')}...")
         await asyncio.sleep(wait_seconds)
 
     def get_dynamic_confidence_for_component(self, symbol, component, action="HOLD", market_data=None):
